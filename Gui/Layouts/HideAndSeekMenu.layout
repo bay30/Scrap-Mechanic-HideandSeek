@@ -1,0 +1,192 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<MyGUI type="Layout" version="3.2.0">
+    <Widget type="Widget" skin="BlurryBackgroundSkin" position_real="0 0 1 1">
+        <Widget type="Widget" skin="BackgroundInteractableWide" position_real="0.2 0.2 0.6 0.6" align="Center">
+            <Widget type="Widget" skin="Banner" position_real="0.148438 0 0.699653 0.25">
+                <Widget type="TextBox" skin="TextBox" position_real="0.16005 0.123457 0.673697 0.493827">
+                    <Property key="Caption" value="HIDE AND SEEK"/>
+                    <Property key="FontHeight" value="50"/>
+                    <Property key="TextAlign" value="Center"/>
+                    <Property key="TextShadowColour" value="0 0 0"/>
+                    <Property key="FontName" value="SM_HeaderLarge_Wide"/>
+                </Widget>
+            </Widget>
+            <Widget type="Button" skin="StyledButtonLarge" position="830 565 135 60" name="Explore">
+                <Property key="Caption" value="EXPLORE"/>
+                <Property key="FontName" value="SM_ButtonSmall"/>
+                <Property key="TextAlign" value="Center"/>
+                <Property key="FontHeight" value="24"/>
+            </Widget>
+            <Widget type="Button" skin="SettingsButton" position="425 380 70 60" name="BecomeSeekersY">
+                <Property key="StateSelected" value="false"/>
+                <Property key="Caption" value="YES"/>
+                <Property key="FontName" value="SM_Button"/>
+                <Property key="TextAlign" value="Center"/>
+            </Widget>
+            <Widget type="Button" skin="SettingsButton" position="970 185 70 60" name="LimitedY">
+                <Property key="StateSelected" value="false"/>
+                <Property key="Caption" value="YES"/>
+                <Property key="TextAlign" value="Center"/>
+                <Property key="FontName" value="SM_Button"/>
+            </Widget>
+			<Widget type="Button" skin="SettingsButton" position="970 255 70 60" name="DestructionY">
+                <Property key="StateSelected" value="false"/>
+                <Property key="Caption" value="YES"/>
+                <Property key="TextAlign" value="Center"/>
+                <Property key="FontName" value="SM_Button"/>
+            </Widget>
+			<Widget type="Button" skin="SettingsButton" position="970 320 70 60" name="HammerY">
+                <Property key="StateSelected" value="false"/>
+                <Property key="Caption" value="YES"/>
+                <Property key="TextAlign" value="Center"/>
+                <Property key="FontName" value="SM_Button"/>
+				<Property key="StateSelected" value="true"/>
+            </Widget>
+			<Widget type="Button" skin="SettingsButton" position="970 385 70 60" name="SpudgunY">
+                <Property key="StateSelected" value="false"/>
+                <Property key="Caption" value="YES"/>
+                <Property key="TextAlign" value="Center"/>
+                <Property key="FontName" value="SM_Button"/>
+            </Widget>
+            <Widget type="Button" skin="ButtonPlay" position="980 565 140 53" name="Play"/>
+            <Widget type="Button" skin="SettingsButton" position="425 445 70 60" name="PickSeekersY">
+                <Property key="Caption" value="YES"/>
+                <Property key="TextAlign" value="Center"/>
+                <Property key="FontName" value="SM_Button"/>
+            </Widget>
+            <Widget type="TextBox" skin="TextBox" position="85 190 330 50">
+                <Property key="Caption" value="hide time (seconds)"/>
+                <Property key="FontHeight" value="24"/>
+                <Property key="FontName" value="SM_Text"/>
+                <Property key="TextAlign" value="Right VCenter"/>
+            </Widget>
+            <Widget type="TextBox" skin="TextBox" position="625 385 330 50">
+                <Property key="FontHeight" value="24"/>
+                <Property key="FontName" value="SM_Text"/>
+                <Property key="TextAlign" value="Right VCenter"/>
+                <Property key="Caption" value="Spudgun"/>
+            </Widget>
+            <Widget type="TextBox" skin="TextBox" position="625 320 330 50">
+                <Property key="FontHeight" value="24"/>
+                <Property key="FontName" value="SM_Text"/>
+                <Property key="TextAlign" value="Right VCenter"/>
+                <Property key="Caption" value="Hammer"/>
+            </Widget>
+            <Widget type="TextBox" skin="TextBox" position="625 255 330 50">
+                <Property key="FontHeight" value="24"/>
+                <Property key="FontName" value="SM_Text"/>
+                <Property key="TextAlign" value="Right VCenter"/>
+                <Property key="Caption" value="Allow building/destruction"/>
+            </Widget>
+            <Widget type="TextBox" skin="TextBox" position="625 190 330 50">
+                <Property key="Caption" value="Creative inventory enabled"/>
+                <Property key="FontHeight" value="24"/>
+                <Property key="FontName" value="SM_Text"/>
+                <Property key="TextAlign" value="Right VCenter"/>
+            </Widget>
+            <Widget type="Widget" skin="ActiveButton" position="425 185 70 60">
+				<Widget type="EditBox" skin="EditBoxEmpty" position_real="0 0 1 1" name="HideTime">
+					<Property key="Caption" value="60"/>
+					<Property key="TextAlign" value="Center"/>
+					<Property key="FontName" value="SM_NumberLarge"/>
+					<Property key="TextColour" value="1 1 1"/>
+				</Widget>
+            </Widget>
+            <Widget type="TextBox" skin="TextBox" position="85 320 330 50">
+                <Property key="FontHeight" value="24"/>
+                <Property key="FontName" value="SM_Text"/>
+                <Property key="TextAlign" value="Right VCenter"/>
+                <Property key="Caption" value="amount seekers"/>
+            </Widget>
+            <Widget type="TextBox" skin="TextBox" position="85 385 330 50">
+                <Property key="FontHeight" value="24"/>
+                <Property key="FontName" value="SM_Text"/>
+                <Property key="TextAlign" value="Right VCenter"/>
+                <Property key="Caption" value="found players become seekers"/>
+            </Widget>
+            <Widget type="TextBox" skin="TextBox" position="85 450 330 50">
+                <Property key="FontHeight" value="24"/>
+                <Property key="FontName" value="SM_Text"/>
+                <Property key="TextAlign" value="Right VCenter"/>
+                <Property key="Caption" value="Host picks seekers (spudgun)"/>
+            </Widget>
+            <Widget type="Widget" skin="ActiveButton" position="425 315 70 60">
+				<Widget type="EditBox" skin="EditBoxEmpty" position_real="0 0 1 1" name="Seekers">
+					<Property key="Caption" value="1"/>
+					<Property key="TextAlign" value="Center"/>
+					<Property key="FontName" value="SM_NumberLarge"/>
+					<Property key="TextColour" value="1 1 1"/>
+				</Widget>
+            </Widget>
+            <Widget type="TextBox" skin="TextBox" position="85 255 330 50">
+                <Property key="Caption" value="game time (seconds, 0 for inf)"/>
+                <Property key="FontHeight" value="24"/>
+                <Property key="FontName" value="SM_Text"/>
+                <Property key="TextAlign" value="Right VCenter"/>
+            </Widget>
+            <Widget type="Widget" skin="ActiveButton" position="425 250 70 60">
+                <Widget type="EditBox" skin="EditBoxEmpty" position_real="0 0 1 1" name="GameTime">
+					<Property key="Caption" value="0"/>
+					<Property key="TextAlign" value="Center"/>
+					<Property key="FontName" value="SM_NumberLarge"/>
+					<Property key="TextColour" value="1 1 1"/>
+				</Widget>
+            </Widget>
+            <Widget type="Button" skin="SecondaryButton" position="85 565 135 55" name="Workshop">
+                <Property key="TextAlign" value="Center"/>
+                <Property key="FontName" value="SM_ButtonSmall"/>
+                <Property key="Caption" value="WORKSHOP"/>
+            </Widget>
+            <Widget type="Button" skin="SettingsButton" position="495 380 70 60" name="BecomeSeekersN">
+                <Property key="Caption" value="NO"/>
+                <Property key="FontName" value="SM_Button"/>
+                <Property key="TextAlign" value="Center"/>
+                <Property key="StateSelected" value="true"/>
+            </Widget>
+            <Widget type="Button" skin="SettingsButton" position="495 445 70 60" name="PickSeekersN">
+                <Property key="FontName" value="SM_Button"/>
+                <Property key="Caption" value="NO"/>
+                <Property key="TextAlign" value="Center"/>
+                <Property key="StateSelected" value="true"/>
+            </Widget>
+            <Widget type="Button" skin="SettingsButton" position="1040 185 70 60" name="LimitedN">
+                <Property key="Caption" value="NO"/>
+                <Property key="FontName" value="SM_Button"/>
+                <Property key="TextAlign" value="Center"/>
+                <Property key="StateSelected" value="true"/>
+            </Widget>
+			<Widget type="Button" skin="SettingsButton" position="1040 255 70 60" name="DestructionN">
+                <Property key="Caption" value="NO"/>
+                <Property key="FontName" value="SM_Button"/>
+                <Property key="TextAlign" value="Center"/>
+                <Property key="StateSelected" value="true"/>
+            </Widget>
+			<Widget type="Button" skin="SettingsButton" position="1040 320 70 60" name="HammerN">
+                <Property key="Caption" value="NO"/>
+                <Property key="FontName" value="SM_Button"/>
+                <Property key="TextAlign" value="Center"/>
+            </Widget>
+            <Widget type="Button" skin="SecondaryButton" position="245 565 135 55" name="Stop game">
+                <Property key="Caption" value="STOP GAME"/>
+                <Property key="TextAlign" value="Center"/>
+                <Property key="FontName" value="SM_ButtonSmall"/>
+            </Widget>
+			<Widget type="Button" skin="SettingsButton" position="1040 385 70 60" name="SpudgunN">
+                <Property key="Caption" value="NO"/>
+                <Property key="FontName" value="SM_Button"/>
+                <Property key="TextAlign" value="Center"/>
+            </Widget>
+            <Widget type="Button" skin="SecondaryButton" position="405 565 135 55" name="Reset score">
+                <Property key="TextAlign" value="Center"/>
+                <Property key="FontName" value="SM_ButtonSmall"/>
+                <Property key="Caption" value="RESET SCORE"/>
+            </Widget>
+        </Widget>
+    </Widget>
+    <CodeGeneratorSettings>
+        <Property key="IncludeDirectory" value=""/>
+        <Property key="PanelName" value=""/>
+        <Property key="PanelNamespace" value=""/>
+        <Property key="SourceDirectory" value=""/>
+    </CodeGeneratorSettings>
+</MyGUI>

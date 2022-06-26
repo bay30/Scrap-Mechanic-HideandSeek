@@ -1,0 +1,14 @@
+{
+	"assetSetList": [
+		{
+			"assetSet": "$CONTENT_DATA/Terrain/Database/AssetSets/example.assetset",
+			"categories": []
+		},
+		{
+			"assetSet": "$CHALLENGE_DATA/Terrain/Database/AssetSets/challengemode.json",
+			"categories": [
+				"Environment/Challengemode/Challengemode"
+			]
+		}
+	]
+}

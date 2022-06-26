@@ -1,0 +1,42 @@
+{
+	"partList": [
+		{
+			"uuid": "6fc1e0c2-5af5-435c-8ffe-90479e515a7d",
+			"name": "obj_challenge_interactive_coreblock",
+			"renderable": {
+				"lodList": [
+					{
+						"subMeshList": [
+							{
+								"textureList": [
+									"$CONTENT_DATA/Objects/Textures/obj_challengemode_saveblock_dif.tga",
+									"$CONTENT_DATA/Objects/Textures/obj_challengemode_saveblock_asg.tga",
+									"$CONTENT_DATA/Objects/Textures/obj_challengemode_saveblock_nor.tga"
+								],
+								"material": "DifAsgNor"
+							}
+						],
+						"mesh": "$CONTENT_DATA/Objects/Mesh/challengemode_box.fbx"
+					}
+				]
+			},
+			"color": "123456",
+			"box": {
+				"x": 1,
+				"y": 1,
+				"z": 1
+			},
+			"scripted": {
+				"filename": "$CONTENT_DATA/Scripts/Parts/Main.lua",
+				"classname": "Main"
+			},
+			"rotationSet": "PropY",
+			"physicsMaterial": "Metal",
+			"ratings": {
+				"friction": 7
+			},
+			"density": 500.0,
+			"qualityLevel": 0
+		}
+	]
+}

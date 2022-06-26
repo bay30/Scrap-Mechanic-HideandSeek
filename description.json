@@ -1,0 +1,10 @@
+{
+   "allow_add_mods" : true,
+   "custom_icons" : false,
+   "description" : "Commands:\r\n/fly - enables flight\r\n/return - returns to the build world\r\n/score - shows everyones score\r\n/settings - note not exactly useful during a round\r\n\r\nNote the publish block saves the settings you put into it\r\n\r\nCredits to Brent Batch for the gui",
+   "fileId" : 2824381804,
+   "localId" : "a1380e74-6b66-47d8-b5fb-6b7751da3da6",
+   "name" : "Hide & Seek",
+   "type" : "Custom Game",
+   "version" : 0
+}

@@ -1,0 +1,11 @@
+{
+	"shapeSetList":
+	[
+		
+		"$CHALLENGE_DATA/Objects/Database/ShapeSets/blocks.json",
+		"$CHALLENGE_DATA/Objects/Database/ShapeSets/challenge.json",
+		"$CHALLENGE_DATA/Objects/Database/ShapeSets/interactive.json",
+		"$CHALLENGE_DATA/Objects/Database/ShapeSets/override.json",
+		"$CONTENT_DATA/Objects/Database/ShapeSets/interactable.shapeset"
+	]
+}
