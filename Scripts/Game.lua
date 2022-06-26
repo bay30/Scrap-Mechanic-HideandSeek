@@ -286,7 +286,6 @@ function Game.server_setWorld( self, args )
 			self.sv.activeWorld:destroy()
 		end
 		self.sv.activeWorld = sm.world.createWorld( "$CONTENT_DATA/Scripts/World.lua", "World", { world=sm.hideandseek.world, tiles=sm.hideandseek.tiles, play=true } )
-		sm.event.sendToWorld(self.sv.activeWorld,"server_destroyFloor")
 	end
 end
 

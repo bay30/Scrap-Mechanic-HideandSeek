@@ -17,7 +17,9 @@ function World.server_onCreate( self )
 	ChallengeBaseWorld.server_onCreate( self )
     	self.waterManager = WaterManager()
 	self.waterManager:sv_onCreate( self )
-	self.sv.displayFloor = true
+	self.sv = {}
+	local Value = data.play or false
+	self.sv.displayFloor = Value
 end
 
 function World.server_onFixedUpdate( self )
@@ -64,12 +66,6 @@ function World.server_celebrate( self )
 	self.network:sendToClients("client_celebrate")
 end
 
-function World.server_destroyFloor( self )
-	self.network:sendToClients("client_destroyFloor")
-	self.sv.displayFloor = false
-end
-
-
 function World.server_onCellLoaded( self, x, y )
 	self.waterManager:sv_onCellReloaded( x, y )
 end
@@ -80,6 +76,7 @@ end
 
 function World.client_onCreate( self )
 	ChallengeBaseWorld.client_onCreate( self )
+	self.cl = {}
 	if self.sv.displayFloor then
 		self.cl.floorEffect = sm.effect.createEffect( "BuildMode - Floor" )
 		self.cl.floorEffect:start()
@@ -97,7 +94,7 @@ end
 
 function World.client_destroyFloor( self )
 	if self.floorEffect then
-		self.cl.floorEffect:stop()
+		self.cl.floorEffect:destroy()
 		self.cl.floorEffect = nil
 	end
 end
