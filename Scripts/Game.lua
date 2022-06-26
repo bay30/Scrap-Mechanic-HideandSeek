@@ -37,6 +37,9 @@ function Game.server_onCreate( self )
 	end
 	G_ChallengeStarted = false
 	G_ChallengeStartTick = 0
+	sm.challenge.hasStarted = function()
+		return G_ChallengeStarted
+	end
 	sm.challenge.start = function()
 		if not G_ChallengeStarted then
 			print("started")
@@ -69,9 +72,11 @@ end
 function Game.server_onFixedUpdate( self, delta )
 	g_unitManager:sv_onFixedUpdate()
 	if not self.sv.gameRunning then return end
+	local Hiders = 0
 	for key,info in pairs(sm.hideandseek.score) do
 		if sm.hideandseek.seekers[key] == nil then
 			info.hidetime = os.clock() - G_ChallengeStartTick
+			Hiders = Hiders + 1
 		end
 	end
 	if self.sv.objectlist.starters then
@@ -123,6 +128,11 @@ function Game.server_onFixedUpdate( self, delta )
 			self.network:sendToClients("client_displayAlert","Game over!")
 			sm.event.sendToWorld(self.sv.activeWorld,"server_celebrate")
 		end
+	elseif sm.challenge.hasStarted() and Hiders < 1 then
+		self.sv.gameRunning = false
+		self.network:sendToClients("client_displayTimer","00:00:00")
+		self.network:sendToClients("client_displayAlert","Game over!")
+		sm.event.sendToWorld(self.sv.activeWorld,"server_celebrate")
 	end
 end
 
@@ -276,6 +286,7 @@ function Game.server_setWorld( self, args )
 			self.sv.activeWorld:destroy()
 		end
 		self.sv.activeWorld = sm.world.createWorld( "$CONTENT_DATA/Scripts/World.lua", "World", { world=sm.hideandseek.world, tiles=sm.hideandseek.tiles, play=true } )
+		sm.event.sendToWorld(self.sv.activeWorld,"server_destroyFloor")
 	end
 end
 
