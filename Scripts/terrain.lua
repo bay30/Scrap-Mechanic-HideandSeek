@@ -63,6 +63,10 @@ function Create( xMin, xMax, yMin, yMax, seed, data )
 		end
 	end
 	
+	if data.play == true then
+		gnd.uuid = sm.uuid.getNil()
+	end
+	
 	terraindata = g_cellData.uid
 
 	--sm.terrainData.save( { g_uuidToPath, g_cellData } ) not challenge mode gg rekt
@@ -169,7 +173,9 @@ function GetAssetsForCell( cellX, cellY, lod )
 			end
 		end
 	end
-	assets[#assets + 1] = gnd
+	if not gnd.uuid:isNil() then
+		assets[#assets + 1] = gnd
+	end
 	return assets
 end
 
