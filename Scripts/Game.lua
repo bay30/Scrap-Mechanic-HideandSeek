@@ -37,9 +37,6 @@ function Game.server_onCreate( self )
 	end
 	G_ChallengeStarted = false
 	G_ChallengeStartTick = 0
-	sm.challenge.hasStarted = function()
-		return G_ChallengeStarted
-	end
 	sm.challenge.start = function()
 		if not G_ChallengeStarted then
 			print("started")
@@ -341,6 +338,10 @@ function Game.client_displayTimer( self, text )
 end
 
 function Game.client_onCreate( self )
+	
+	sm.challenge.hasStarted = function()
+		return G_ChallengeStarted
+	end
 
 	if g_unitManager == nil then
 		assert( not sm.isHost )
