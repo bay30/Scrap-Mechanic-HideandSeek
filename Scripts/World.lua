@@ -15,8 +15,9 @@ World.enableSurface = true
 
 function World.server_onCreate( self )
 	ChallengeBaseWorld.server_onCreate( self )
-    self.waterManager = WaterManager()
+    	self.waterManager = WaterManager()
 	self.waterManager:sv_onCreate( self )
+	self.sv.displayFloor = true
 end
 
 function World.server_onFixedUpdate( self )
@@ -63,6 +64,11 @@ function World.server_celebrate( self )
 	self.network:sendToClients("client_celebrate")
 end
 
+function World.server_destroyFloor( self )
+	self.network:sendToClients("client_destroyFloor")
+	self.sv.displayFloor = false
+end
+
 
 function World.server_onCellLoaded( self, x, y )
 	self.waterManager:sv_onCellReloaded( x, y )
@@ -74,8 +80,10 @@ end
 
 function World.client_onCreate( self )
 	ChallengeBaseWorld.client_onCreate( self )
-	self.floorEffect = sm.effect.createEffect( "BuildMode - Floor" )
-	self.floorEffect:start()
+	if self.sv.displayFloor then
+		self.cl.floorEffect = sm.effect.createEffect( "BuildMode - Floor" )
+		self.cl.floorEffect:start()
+	end
 	if self.waterManager == nil then
 		assert( not sm.isHost )
 		self.waterManager = WaterManager()
@@ -84,7 +92,14 @@ function World.client_onCreate( self )
 end
 
 function World.client_onDestroy( self )
-	self.floorEffect:stop()
+	self:client_destroyFloor()
+end
+
+function World.client_destroyFloor( self )
+	if self.floorEffect then
+		self.cl.floorEffect:stop()
+		self.cl.floorEffect = nil
+	end
 end
 
 function World.client_celebrate( self )
