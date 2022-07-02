@@ -96,9 +96,12 @@ function Game.server_onFixedUpdate( self, delta )
 								end
 							else
 								self.network:sendToClients("client_setTag",{character=plr.character,name=""})
+								sm.event.sendToWorld(self.sv.activeWorld,"createCharacterOnSpawner",{players=sm.player.getAllPlayers(),uuid="b5858089-b1f8-4d13-a485-fdcb204d9c6b"})
 							end
 						end
 					end
+					
+					sm.event.sendToWorld(self.sv.activeWorld,"destructive",sm.hideandseek.settings.Destruction)
 					
 				end
 			end
@@ -115,9 +118,10 @@ function Game.server_onFixedUpdate( self, delta )
 			sm.challenge.start()
 			self.sv.countdownTime = self.sv.countdownTime - delta
 			self.network:sendToClients("client_displayAlert","Seekers have been released")
+			sm.event.sendToWorld(self.sv.activeWorld,"createCharacterOnSpawner",{players=sm.player.getAllPlayers(),uuid="b5858089-d1f8-4d13-a485-fdcb204d9c6b"})
 		end
 	end
-	if sm.challenge.hasStarted() and sm.hideandseek.settings.GameTime then
+	if sm.challenge.hasStarted() and sm.hideandseek.settings.GameTime and sm.hideandseek.settings.GameTime ~= 0 then
 		local seconds = (G_ChallengeStartTick+sm.hideandseek.settings.GameTime)-os.clock()
 		local minutes = seconds/60
 		local hours = minutes/60
@@ -150,7 +154,7 @@ function Game.server_onTag( self, args )
 				end
 				sm.hideandseek.score[args["tagger"].id].tags = sm.hideandseek.score[args["tagger"].id].tags + 1
 			end
-		elseif args["tagger"].id == 1 and sm.hideandseek.settings.PickSeekers and not sm.challenge.hasStarted() then
+		elseif args["tagger"].id == 1 and sm.hideandseek.settings.PickSeekers and not sm.challenge.hasStarted() and not self.sv.countdownStarted then
 			if sm.hideandseek.seekers[args["tagged"].id] then
 				sm.hideandseek.seekers[args["tagged"].id] = nil
 				self.network:sendToClients("client_setTag",{character=args["tagged"].character,name=""})
@@ -182,7 +186,6 @@ function Game.server_load( self, args )
 	-- Seekers --
 	
 	if sm.hideandseek.settings.PickSeekers == nil or sm.hideandseek.settings.PickSeekers == false then
-		print("lol")
 		local Selection = sm.player.getAllPlayers()
 		local Seekers = 1
 		if sm.hideandseek.settings.Seekers and #sm.hideandseek.settings.Seekers <= #Selection then
@@ -233,11 +236,11 @@ function Game.server_load( self, args )
 	for key,creation in pairs(sm.hideandseek.blueprints or {}) do
 		local creation = sm.creation.importFromString( self.sv.activeWorld, creation, sm.vec3.zero(), sm.quat.identity(), true )
 		for _,body in ipairs(creation) do
-			body.erasable = sm.hideandseek.settings.Destruction or false
-			body.buildable = sm.hideandseek.settings.Destruction or false
-			body.usable = sm.hideandseek.settings.Destruction or false
-			body.liftable = sm.hideandseek.settings.Destruction or false
-			print(sm.hideandseek.Destruction or false)
+			body.erasable = false
+			body.buildable = false
+			body.usable = false
+			body.liftable = false
+			body.destructable = false
 			for key,shape in pairs(body:getShapes()) do
 				if shape.uuid == sm.uuid.new("4a9929e9-aa85-4791-89c2-f8799920793f") then
 					if not self.sv.objectlist.starters then

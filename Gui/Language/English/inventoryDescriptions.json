@@ -1,6 +1,14 @@
 {
-	"6fc1e0c2-5af5-435c-8ffe-90479e515a7d" : {
-		"title" : "Publish Block",
-		"description" : "Place this on your creation and save before you upload it"
-	}
+   "6fc1e0c2-5af5-435c-8ffe-90479e515a7d" : {
+      "description" : "Place this on your creation and save before you upload it",
+      "title" : "Publish Block"
+   },
+   "b5858089-b1f8-4d13-a485-fdcb204d9c6b" : {
+      "description" : "Once the countdown begins all hiders are teleported here",
+      "title" : "Hider Spawnpoint"
+   },
+   "b5858089-d1f8-4d13-a485-fdcb204d9c6b" : {
+      "description" : "Once the countdown ends all seekers are teleported here",
+      "title" : "Seeker Spawnpoint"
+   }
 }

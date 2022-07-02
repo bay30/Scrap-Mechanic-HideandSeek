@@ -37,6 +37,84 @@
 			},
 			"density": 500.0,
 			"qualityLevel": 0
-		}
+		},
+		{
+         "box" : {
+            "x" : 4,
+            "y" : 1,
+            "z" : 4
+         },
+		 "scripted": {
+			"filename": "$CONTENT_DATA/Scripts/Parts/Spawner.lua",
+			"classname": "Spawner"
+		 },
+         "color" : "4e9be3",
+         "density" : 1250.0,
+         "name" : "obj_challenge_interactive_hiderspawn",
+         "physicsMaterial" : "Metal",
+         "qualityLevel" : 0,
+         "ratings" : {
+            "friction" : 7
+         },
+         "renderable" : {
+            "lodList" : [
+               {
+                  "mesh" : "$CHALLENGE_DATA/Objects/Mesh/interactive/obj_interactive_startposition.fbx",
+                  "subMeshList" : [
+                     {
+                        "material" : "DifAsgNor",
+                        "textureList" : [
+                           "$CONTENT_DATA/Objects/Textures/obj_interactive_hiderspawn_dif.tga",
+                           "$CHALLENGE_DATA/Objects/Textures/interactive/obj_interactive_startposition_asg.tga",
+                           "$CHALLENGE_DATA/Objects/Textures/interactive/obj_interactive_startposition_nor.tga"
+                        ]
+                     }
+                  ]
+               }
+            ]
+         },
+         "rotationSet" : "StaticY",
+         "sticky" : "-Z+Z-Y-X+X",
+         "uuid" : "b5858089-b1f8-4d13-a485-fdcb204d9c6b"
+      },
+	  {
+         "box" : {
+            "x" : 4,
+            "y" : 1,
+            "z" : 4
+         },
+		 "scripted": {
+			"filename": "$CONTENT_DATA/Scripts/Parts/Spawner.lua",
+			"classname": "Spawner"
+		 },
+         "color" : "4e9be3",
+         "density" : 1250.0,
+         "name" : "obj_challenge_interactive_seekerspawn",
+         "physicsMaterial" : "Metal",
+         "qualityLevel" : 0,
+         "ratings" : {
+            "friction" : 7
+         },
+         "renderable" : {
+            "lodList" : [
+               {
+                  "mesh" : "$CHALLENGE_DATA/Objects/Mesh/interactive/obj_interactive_startposition.fbx",
+                  "subMeshList" : [
+                     {
+                        "material" : "DifAsgNor",
+                        "textureList" : [
+                           "$CONTENT_DATA/Objects/Textures/obj_interactive_seekerspawn_dif.tga",
+                           "$CHALLENGE_DATA/Objects/Textures/interactive/obj_interactive_startposition_asg.tga",
+                           "$CHALLENGE_DATA/Objects/Textures/interactive/obj_interactive_startposition_nor.tga"
+                        ]
+                     }
+                  ]
+               }
+            ]
+         },
+         "rotationSet" : "StaticY",
+         "sticky" : "-Z+Z-Y-X+X",
+         "uuid" : "b5858089-d1f8-4d13-a485-fdcb204d9c6b"
+      }
 	]
 }

@@ -13,13 +13,57 @@ World.cellMaxY = 6
 World.renderMode = "challenge"
 World.enableSurface = true
 
+function World.createCharacterOnSpawner( self, data )
+	local playerSpawners = self.filteredinteractables[tostring(data.uuid or "")] or {}
+	print(playerSpawners)
+	for key,player in pairs(data.players or {}) do
+		local spawnPosition = sm.vec3.new(0,0,100)
+		local yaw = 0
+		local pitch = 0
+		if #playerSpawners > 0 then
+			local spawnerIndex = ( ( player.id - 1 ) % #playerSpawners ) + 1
+			local spawner = playerSpawners[spawnerIndex]
+			spawnPosition = spawner.shape.worldPosition + spawner.shape:getAt() * 0.825
+		
+			local spawnDirection = -spawner.shape:getUp()
+			pitch = math.asin( spawnDirection.z )
+			yaw = math.atan2( spawnDirection.x, -spawnDirection.y )
+			
+			local character = sm.character.createCharacter( player, self.world, spawnPosition, yaw, pitch )
+			player:setCharacter( character )
+		else
+			print("not enough spawners")
+		end
+	end
+end
+
+table.find = function(tab,val)
+	for key,obj in pairs(tab) do
+		if obj == val then
+			return key,obj
+		end
+	end
+	return nil
+end
+
+function World.destructive( self, state )
+	for key,body in pairs(sm.body.getAllBodies()) do
+		if sm.exists(body) then
+			body.destructable = state
+		end
+	end
+end
+
 function World.server_onCreate( self )
 	ChallengeBaseWorld.server_onCreate( self )
     	self.waterManager = WaterManager()
 	self.waterManager:sv_onCreate( self )
 	self.sv = {}
+	if data == nil then data = {} end
 	local Value = data.play or false
 	self.sv.displayFloor = Value
+	self.interactables = {}
+	self.filteredinteractables = {}
 end
 
 function World.server_onFixedUpdate( self )
@@ -72,6 +116,26 @@ end
 
 function World.server_onCellUnloaded( self, x, y )
 	self.waterManager:sv_onCellUnloaded( x, y )
+end
+
+function World.server_onInteractableCreated( self, interactable )
+	if interactable.shape then
+		self.interactables[interactable.id] = tostring(interactable.shape.uuid)
+		if not self.filteredinteractables[tostring(interactable.shape.uuid)] then
+			self.filteredinteractables[tostring(interactable.shape.uuid)] = {}
+		end
+		table.insert(self.filteredinteractables[tostring(interactable.shape.uuid)],interactable)
+	end
+end
+
+function World.server_onInteractableDestroyed( self, interactable )
+	if self.interactables[interactable.id] then
+		local a = table.find(self.filteredinteractables[self.interactables[interactable.id]],interactable)
+		if a then
+			table.remove(self.filteredinteractables[self.interactables[interactable.id]],a)
+		end
+		self.interactables[interactable.id] = nil
+	end
 end
 
 function World.client_onCreate( self )
