@@ -1,3 +1,16 @@
 {
-	"toolList": []
+	"toolList": [
+		{
+			"uuid": "041d874e-46b3-49ec-8b26-e3db9770c6fd",
+			"previewRenderable": "$GAME_DATA/Character/Char_Tools/char_spudgun_preview.rend",
+			"previewRotation": [ 1, 0, 0, 0, 0, -1, 0, 1, 0 ],
+			"script": { "file": "$CONTENT_DATA/Scripts/Tools/PotatoRifle.lua", "class": "PotatoRifle" }
+		},
+		{
+			"uuid": "09845ac0-4785-4ce8-98b3-0aa4a88c4bdd",
+			"previewRenderable": "$GAME_DATA/Character/Char_Tools/char_sledgehammer_preview.rend",
+			"previewRotation": [  -1, 0, 0, 0, 0, 1, 0, 1, 0 ],
+			"script": { "file": "$CONTENT_DATA/Scripts/Tools/Sledgehammer.lua", "class": "Sledgehammer" }
+		}
+	]
 }

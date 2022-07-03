@@ -42,7 +42,6 @@ function Game.server_onCreate( self )
 	end
 	sm.challenge.start = function()
 		if not G_ChallengeStarted then
-			print("started")
 			G_ChallengeStarted = true
 			G_ChallengeStartTick = os.clock()
 			for key,plr in pairs(sm.player.getAllPlayers()) do
@@ -52,7 +51,6 @@ function Game.server_onCreate( self )
 	end
 	sm.challenge.stop = function()
 		if G_ChallengeStarted then
-			print("stopped")
 			G_ChallengeStarted = false
 		end
 	end
@@ -141,7 +139,7 @@ function Game.server_onFixedUpdate( self, delta )
 end
 
 function Game.server_onTag( self, args )
-	print(args)
+	print(self.sv.countdownStarted)
 	if args["tagger"] and args["tagged"] and self.sv.activeWorld ~= self.sv.saved.buildWorld and self.sv.gameRunning then
 		if sm.hideandseek.seekers[args["tagger"].id] and sm.challenge.hasStarted() then
 			if not sm.hideandseek.seekers[args["tagged"].id] and sm.hideandseek.seekers[args["tagger"].id]["seeker"] then
@@ -180,55 +178,63 @@ end
 
 function Game.server_load( self, args )
 
-	sm.game.setLimitedInventory(sm.hideandseek.Limited or true)
-	self.sv.countdownStarted = false
-	print(sm.hideandseek.settings,sm.hideandseek.seekers)
-	-- Seekers --
+	local Edited = args == nil and false or args
+
+	if args then
+
+		sm.game.setLimitedInventory(not sm.hideandseek.settings.Limited)
+		self.sv.countdownStarted = false
 	
-	if sm.hideandseek.settings.PickSeekers == nil or sm.hideandseek.settings.PickSeekers == false then
-		local Selection = sm.player.getAllPlayers()
-		local Seekers = 1
-		if sm.hideandseek.settings.Seekers and #sm.hideandseek.settings.Seekers <= #Selection then
-			Seekers = sm.hideandseek.settings.Seekers
-		end
-		print(Selection,self:server_getTableLength(sm.hideandseek.selectedseekers))
-		if Seekers < #Selection-self:server_getTableLength(sm.hideandseek.selectedseekers) then
-			for key,plr in pairs(Selection) do
-				if sm.hideandseek.selectedseekers[plr.id] then
-					table.remove(Selection,key)
+		-- Seekers --
+	
+		if sm.hideandseek.settings.PickSeekers == nil or sm.hideandseek.settings.PickSeekers == false then
+			local Selection = sm.player.getAllPlayers()
+			local Seekers = 1
+			if sm.hideandseek.settings.Seekers and #sm.hideandseek.settings.Seekers <= #Selection then
+				Seekers = sm.hideandseek.settings.Seekers
+			end
+			print(Selection,self:server_getTableLength(sm.hideandseek.selectedseekers))
+			if Seekers < #Selection-self:server_getTableLength(sm.hideandseek.selectedseekers) then
+				for key,plr in pairs(Selection) do
+					if sm.hideandseek.selectedseekers[plr.id] then
+						table.remove(Selection,key)
+					end
 				end
 			end
+			sm.hideandseek.selectedseekers = {}
+			print(Selection)
+			for i = 1, Seekers do
+				local Number = math.random(1,#Selection)
+				local Selected = Selection[Number]
+				sm.hideandseek.selectedseekers[Selected.id] = Number
+				sm.hideandseek.seekers[Selected.id] = {Selected,seeker=true}
+				table.remove(Selection,Number)
+			end
 		end
-		sm.hideandseek.selectedseekers = {}
-		print(Selection)
-		for i = 1, Seekers do
-			local Number = math.random(1,#Selection)
-			local Selected = Selection[Number]
-			sm.hideandseek.selectedseekers[Selected.id] = Number
-			sm.hideandseek.seekers[Selected.id] = {Selected,seeker=true}
-			table.remove(Selection,Number)
-		end
-	end
 	
-	-- Seekers --
+		-- Seekers --
 	
-	-- Inv --
-	local Array = {}
-	if sm.hideandseek.settings.Hammer then
-		table.insert(Array,"ed185725-ea12-43fc-9cd7-4295d0dbf88b")
-	end
-	if sm.hideandseek.settings.Spudgun then
-		table.insert(Array,"c5ea0c2f-185b-48d6-b4df-45c386a575cc")
-	end
-	for _,plr in pairs(sm.player.getAllPlayers()) do 
-		local inventoryContainer = plr:getInventory()
-		sm.container.beginTransaction()
-		for i = 0,inventoryContainer.size do
-			sm.container.setItem( inventoryContainer, i, sm.uuid.new(Array[i+1] or "00000000-0000-0000-0000-000000000000"), 1 )
+		-- Inv --
+		local Array = {}
+		if sm.hideandseek.settings.Hammer then
+			table.insert(Array,"09845ac0-4785-4ce8-98b3-0aa4a88c4bdd")
 		end
-		sm.container.endTransaction()
+		if sm.hideandseek.settings.Spudgun then
+			table.insert(Array,"041d874e-46b3-49ec-8b26-e3db9770c6fd")
+		end
+		for _,plr in pairs(sm.player.getAllPlayers()) do 
+			local inventoryContainer = plr:getInventory()
+			sm.container.beginTransaction()
+			for i = 0,inventoryContainer.size do
+				sm.container.setItem( inventoryContainer, i, sm.uuid.new(Array[i+1] or "00000000-0000-0000-0000-000000000000"), 1 )
+			end
+			sm.container.endTransaction()
+		end
+		-- Inv --
+		
+	else
+		self.sv.countdownStarted = true
 	end
-	-- Inv --
 	
 	self:server_setWorld("play")
 	
@@ -236,11 +242,11 @@ function Game.server_load( self, args )
 	for key,creation in pairs(sm.hideandseek.blueprints or {}) do
 		local creation = sm.creation.importFromString( self.sv.activeWorld, creation, sm.vec3.zero(), sm.quat.identity(), true )
 		for _,body in ipairs(creation) do
-			body.erasable = false
-			body.buildable = false
-			body.usable = false
-			body.liftable = false
-			body.destructable = false
+			body.erasable = Edited
+			body.buildable = Edited
+			body.usable = Edited
+			body.liftable = Edited
+			body.destructable = Edited
 			for key,shape in pairs(body:getShapes()) do
 				if shape.uuid == sm.uuid.new("4a9929e9-aa85-4791-89c2-f8799920793f") then
 					if not self.sv.objectlist.starters then
@@ -256,6 +262,11 @@ function Game.server_load( self, args )
 	
 	for key,plr in pairs(sm.player.getAllPlayers()) do
 		self.sv.activeWorld:loadCell( 0, 0, plr, "sv_createPlayerCharacter" )
+	end
+	
+	if args then
+		sm.challenge.start()
+		self.sv.gameRunning = false
 	end
 	
 end
@@ -413,17 +424,19 @@ function Game.client_onFixedUpdate( self )
 	end
 end
 
-function Game.client_makeGui(self,layout,val)
+function Game.client_makeGui(self,layout,val,data)
 	if self.cl.gui[val] then
 		self.cl.gui[val] = nil
 	end
-	self.cl.gui[val] = {gui=sm.gui.createGuiFromLayout(layout,true)}
+	self.cl.gui[val] = {gui=sm.gui.createGuiFromLayout(layout,true,data or {})}
 	return self.cl.gui[val]
 end
 
 function Game.client_buttonGui(self,btn)
 	if btn == "Play" then
-		self.network:sendToServer("server_load")
+		self.network:sendToServer("server_load",false)
+	elseif btn == "Explore" then
+		self.network:sendToServer("server_load",true)
 	elseif btn == "Stop game" then
 		self.network:sendToServer("server_setWorld","build")
 	end
@@ -451,6 +464,7 @@ function Game.client_createSettings( self, args )
 	Gui["gui"]:setVisible("Reset score",args.resetscore or args.all)
 	Gui["gui"]:setVisible("Stop game",args.stopgame or args.all)
 	Gui["gui"]:setButtonCallback("Play","client_buttonGui")
+	Gui["gui"]:setButtonCallback("Explore","client_buttonGui")
 	Gui["gui"]:setButtonCallback("Stop game","client_buttonGui")
 	if args.open then
 		Gui["gui"]:open()
@@ -460,7 +474,6 @@ end
 
 function Game.server_updateSettings(self,args)
 	sm.hideandseek.settings[args["editbox"]] = args["value"]
-	print(sm.hideandseek.settings)
 end
 
 function Game.client_settingsUpdate( self, editbox, text )	
@@ -486,7 +499,12 @@ function Game.client_onCommand( self, args )
 		local Gui = self:client_createSettings({isBlock=false,stopgame=true})
 		Gui["gui"]:open()
 	elseif args[1] == "/score" then
-		local Gui = self:client_makeGui("$CONTENT_DATA/Gui/Layouts/HideAndSeekScore.layout","score")
+		if self.cl.gui["score"] then
+			self.cl.gui["score"]["gui"]:destroy()
+			self.cl.gui["score"] = nil
+			return
+		end
+		local Gui = self:client_makeGui("$CONTENT_DATA/Gui/Layouts/HideAndSeekScore.layout","score",{isHud=true,isInteractive=false})
 		Gui["gui"]:open()
 	elseif args[1] == "/fly" then
 		self.network:sendToServer("server_fly")

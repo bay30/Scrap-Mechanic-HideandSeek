@@ -128,7 +128,7 @@ function GetHeightAt( x, y, lod )
 	if terraindata[Y] and terraindata[Y][X] and not terraindata[Y][X]:isNil() and Height ~= nil then
 		return Height
 	end
-	return -9999
+	return -3000
 end
 
 function GetColorAt( x, y, lod )
@@ -186,6 +186,14 @@ function GetNodesForCell( cellX, cellY )
 		node.pos = sm.vec3.new( rx, ry, node.pos.z )
 		node.rot = GetRotationQuat( cellX, cellY ) * node.rot
 	end
+	if tiles and cellX == 0 and cellY == 0 then
+		for sUid,_ in pairs( tiles ) do
+			local tileNodes = sm.terrainTile.getNodesForCell( sm.uuid.new( sUid ), 0, 0 )
+			for _,node in ipairs( tileNodes ) do
+				nodes[#nodes + 1] = node
+			end
+		end
+	end
 	return nodes
 end
 
@@ -199,6 +207,14 @@ function GetCreationsForCell( cellX, cellY )
 			creation.pos = sm.vec3.new( rx, ry, creation.pos.z )
 			creation.rot = GetRotationQuat( cellX, cellY ) * creation.rot
 		end
+		if tiles and cellX == 0 and cellY == 0 then
+			for sUid,_ in pairs( tiles ) do
+				local tileCreations = sm.terrainTile.getCreationsForCell( sm.uuid.new( sUid ), 0, 0 )
+				for _,c in ipairs( tileCreations ) do
+					cellCreations[#cellCreations + 1] = c
+				end
+			end
+		end
 		return cellCreations
 	end
 	return {}
@@ -211,6 +227,14 @@ function GetHarvestablesForCell( cellX, cellY, lod )
 		harvestable.pos = sm.vec3.new( rx, ry, harvestable.pos.z )
 		harvestable.rot = GetRotationQuat( cellX, cellY ) * harvestable.rot
 	end
+	if tiles and cellX == 0 and cellY == 0 then
+		for sUid,_ in pairs( tiles ) do
+			local tileharvestables = sm.terrainTile.getHarvestablesForCell( sm.uuid.new( sUid ), 0, 0 )
+			for _,c in ipairs( tileharvestables ) do
+				harvestables[#harvestables + 1] = c
+			end
+		end
+	end
 	return harvestables
 end
 
@@ -221,6 +245,14 @@ function GetKinematicsForCell( cellX, cellY, lod )
 		kinematic.pos = sm.vec3.new( rx, ry, kinematic.pos.z )
 		kinematic.rot = GetRotationQuat( cellX, cellY ) * kinematic.rot
 	end
+	if tiles and cellX == 0 and cellY == 0 then
+		for sUid,_ in pairs( tiles ) do
+			local tilekinematics = sm.terrainTile.getKinematicsForCell( sm.uuid.new( sUid ), 0, 0 )
+			for _,c in ipairs( tilekinematics ) do
+				kinematics[#kinematics + 1] = c
+			end
+		end
+	end
 	return kinematics
 end
 
@@ -230,6 +262,14 @@ function GetDecalsForCell( cellX, cellY, lod )
 		local rx, ry = RotateLocal( cellX, cellY, decal.pos.x, decal.pos.y )
 		decal.pos = sm.vec3.new( rx, ry, decal.pos.z )
 		decal.rot = GetRotationQuat( cellX, cellY ) * decal.rot
+	end
+	if tiles and cellX == 0 and cellY == 0 then
+		for sUid,_ in pairs( tiles ) do
+			local tiledecals = sm.terrainTile.getDecalsForCell( sm.uuid.new( sUid ), 0, 0 )
+			for _,c in ipairs( tiledecals ) do
+				decals[#decals + 1] = c
+			end
+		end
 	end
 	return decals
 end

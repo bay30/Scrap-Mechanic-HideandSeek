@@ -10,5 +10,13 @@
    "b5858089-d1f8-4d13-a485-fdcb204d9c6b" : {
       "description" : "Once the countdown ends all seekers are teleported here",
       "title" : "Seeker Spawnpoint"
+   },
+   "041d874e-46b3-49ec-8b26-e3db9770c6fd" : {
+	   "description" : "Spudgun with added lasertag tech",
+	   "title" : "Modified Spudgun"
+   },
+   "09845ac0-4785-4ce8-98b3-0aa4a88c4bdd" : {
+	   "description" : "Sledge Hammer with lasertag tech",
+	   "title" : "Modified Hammer"
    }
 }

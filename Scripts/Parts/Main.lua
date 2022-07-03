@@ -34,6 +34,13 @@ function Main.server_setValues( self )
 end
 
 function Main.server_save( self )
+	
+	--local CustomWorld = "$CONTENT_8b575391-5eb4-488e-980e-01352a88a1ad/world.world" -- Make sure your world and any custom tiles are include the blueprint $CONTENT_BLUEPRINTUUID/worldname.world (includes terrain)
+	--local CustomTiles = {} -- Make sure the tiles are instead your blueprint $CONTENT_BLUEPRINTUUID/tilename.tile (these include no terrain)
+	
+	self.sv.saved.world = CustomWorld or ""
+	self.sv.saved.tiles = CustomTiles or {"$CONTENT_DATA/Terrain/Tiles/challengemode_env_DT.tile","$CONTENT_DATA/Terrain/Tiles/ChallengeBuilderDefault.tile"}
+
 	if sm.hideandseek then
 		self.sv.saved.settings = sm.hideandseek.settings
 	end
@@ -42,12 +49,18 @@ function Main.server_save( self )
 		local blueprint = sm.creation.exportToString( creation[1], true, false )
 		table.insert(self.sv.saved.blueprints,blueprint)
 	end
-	self.storage:save( self.sv.saved )
+	local success,result = pcall(function()
+		self.storage:save( self.sv.saved )
+	end)
+	if not success then
+		sm.gui.chatMessage( "#f22015Failure saving, replace block and try again" )
+	end
 end
 
 function Main.client_onInteract( self, character, state )
 	if not state or not sm.isHost then return end
 	self.network:sendToServer("server_setValues")
+	self.network:sendToServer("server_load")
 	sm.event.sendToGame("client_createSettings",{isBlock=true,open=true,play=true,explore=true})
 end
 
@@ -63,10 +76,10 @@ function Main.client_canInteract( self )
 	return true
 end
 
-function Main.server_load()
+function Main.server_load( self )
 	print("Load")
 	local ContentMissing = false
-	local String = "----[Loader]----\n"
+	local String = "----[Content Verifyer]----\n"
 	for key,tile in pairs(self.sv.saved.tiles) do
 		if not sm.json.fileExists(tile) then
 			String = String.. "[Tile]: "..tile.. " Missing\n"
@@ -75,7 +88,7 @@ function Main.server_load()
 	end
 	if self.sv.saved.world and type(self.sv.saved.world) == "string" and self.sv.saved.world ~= "" then
 		if sm.json.fileExists(self.sv.saved.world) then
-			local jWorld = sm.json.open( data.world )
+			local jWorld = sm.json.open( self.sv.saved.world )
 			for _, cell in pairs( jWorld.cellData ) do
 				if cell.path ~= "" then
 					if not sm.json.fileExists(cell.path) then
