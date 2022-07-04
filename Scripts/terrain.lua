@@ -245,14 +245,6 @@ function GetKinematicsForCell( cellX, cellY, lod )
 		kinematic.pos = sm.vec3.new( rx, ry, kinematic.pos.z )
 		kinematic.rot = GetRotationQuat( cellX, cellY ) * kinematic.rot
 	end
-	if tiles and cellX == 0 and cellY == 0 then
-		for sUid,_ in pairs( tiles ) do
-			local tilekinematics = sm.terrainTile.getKinematicsForCell( sm.uuid.new( sUid ), 0, 0 )
-			for _,c in ipairs( tilekinematics ) do
-				kinematics[#kinematics + 1] = c
-			end
-		end
-	end
 	return kinematics
 end
 

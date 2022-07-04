@@ -86,14 +86,7 @@ function Game.server_onFixedUpdate( self, delta )
 					
 					for key,plr in pairs(sm.player.getAllPlayers()) do
 						if plr.character then
-							if sm.hideandseek.seekers[plr.id] then
-								if sm.hideandseek.seekers[plr.id]["seeker"] then
-									self.network:sendToClients("client_setTag",{character=plr.character,name="[Seeker] "..plr:getName()})
-								else
-									self.network:sendToClients("client_setTag",{character=plr.character,name="[Hider] "..plr:getName()})
-								end
-							else
-								self.network:sendToClients("client_setTag",{character=plr.character,name=""})
+							if sm.hideandseek.seekers[plr.id] == nil then
 								sm.event.sendToWorld(self.sv.activeWorld,"createCharacterOnSpawner",{players=sm.player.getAllPlayers(),uuid="b5858089-b1f8-4d13-a485-fdcb204d9c6b"})
 							end
 						end
@@ -139,33 +132,24 @@ function Game.server_onFixedUpdate( self, delta )
 end
 
 function Game.server_onTag( self, args )
-	print(self.sv.countdownStarted)
 	if args["tagger"] and args["tagged"] and self.sv.activeWorld ~= self.sv.saved.buildWorld and self.sv.gameRunning then
 		if sm.hideandseek.seekers[args["tagger"].id] and sm.challenge.hasStarted() then
 			if not sm.hideandseek.seekers[args["tagged"].id] and sm.hideandseek.seekers[args["tagger"].id]["seeker"] then
 				if sm.hideandseek.BecomeSeekers then
 					sm.hideandseek.seekers[args["tagged"].id] = {args["tagged"],seeker=true}
-					self.network:sendToClients("client_setTag",{character=args["tagged"].character,name="[Seeker] "..args["tagged"]:getName()})
 				else
 					sm.hideandseek.seekers[args["tagged"].id] = {args["tagged"],seeker=false}
-					self.network:sendToClients("client_setTag",{character=args["tagged"].character,name="[Hider] "..args["tagged"]:getName()})
 				end
 				sm.hideandseek.score[args["tagger"].id].tags = sm.hideandseek.score[args["tagger"].id].tags + 1
 			end
 		elseif args["tagger"].id == 1 and sm.hideandseek.settings.PickSeekers and not sm.challenge.hasStarted() and not self.sv.countdownStarted then
 			if sm.hideandseek.seekers[args["tagged"].id] then
 				sm.hideandseek.seekers[args["tagged"].id] = nil
-				self.network:sendToClients("client_setTag",{character=args["tagged"].character,name=""})
 			else
 				sm.hideandseek.seekers[args["tagged"].id] = {args["tagged"],seeker=true}
-				self.network:sendToClients("client_setTag",{character=args["tagged"].character,name="[Seeker] "..args["tagged"]:getName()})
 			end
 		end
 	end
-end
-
-function Game.client_setTag(self,args)
-	args["character"]:setNameTag(args["name"])
 end
 
 function Game.server_getTableLength( self, tab )
@@ -178,9 +162,7 @@ end
 
 function Game.server_load( self, args )
 
-	local Edited = args == nil and false or args
-
-	if args then
+	if args == false then
 
 		sm.game.setLimitedInventory(not sm.hideandseek.settings.Limited)
 		self.sv.countdownStarted = false
@@ -264,7 +246,7 @@ function Game.server_load( self, args )
 		self.sv.activeWorld:loadCell( 0, 0, plr, "sv_createPlayerCharacter" )
 	end
 	
-	if args then
+	if args ~= false then
 		sm.challenge.start()
 		self.sv.gameRunning = false
 	end
@@ -317,21 +299,6 @@ function Game.server_onPlayerJoined( self, player, isNewPlayer )
 	
 	sm.hideandseek.score[player.id] = {plr=player,tags=0,hidetime=0}
 	
-	if self.sv.activeWorld ~= self.sv.saved.buildWorld then
-		for _,player in pairs(sm.player.getAllPlayers()) do
-			local character = player.character
-			if sm.hideandseek.seekers[player.id] then
-				if sm.hideandseek.seekers[player.id]["seeker"] then
-					self.network:sendToClients("client_setTag",{character=character,name="[Seeker] "..player:getName()})
-				else
-					self.network:sendToClients("client_setTag",{character=character,name="[Hider] "..player:getName()})
-				end
-			else
-				self.network:sendToClients("client_setTag",{character=character,name=""})
-			end
-		end
-	end
-	
 end
 
 function Game.server_onPlayerLeft( self, player )
@@ -343,6 +310,8 @@ function Game.sv_createPlayerCharacter( self, world, x, y, player, params )
     local character = sm.character.createCharacter( player, world, pos,pitch,yaw )
 	player:setCharacter( character )
 end
+
+-- Client --
 
 function Game.client_onLoadingScreenLifted( self )
 	g_effectManager:cl_onLoadingScreenLifted()
@@ -419,6 +388,31 @@ function Game.client_onFixedUpdate( self )
 				self.cl.gui.score.gui:setText("Player"..i, "Player")
 				self.cl.gui.score.gui:setText("TextScore"..i,"N/A")
 				self.cl.gui.score.gui:setText("TextTime"..i,"N/A")
+			end
+		end
+	end
+	local Player = sm.localPlayer.getPlayer()
+	local AmSeeker = false
+	if sm.hideandseek.seekers[Player.id] and sm.hideandseek.seekers[Player.id]["seeker"] then
+		AmSeeker = true
+	end
+	if Player and Player.character then
+		for key,plr in pairs(sm.player.getAllPlayers()) do
+			if plr.character then
+				if not AmSeeker or sm.hideandseek.seekers[plr.id] then
+					local Distance = math.floor((plr.character:getWorldPosition()-Player.character:getWorldPosition()):length2()/4)
+					local Color = sm.color.new(1,1,1)
+					if sm.hideandseek.seekers[plr.id] then
+						if sm.hideandseek.seekers[plr.id]["seeker"] then
+							Color = sm.color.new(1,0.294,0.294)
+						else
+							Color = sm.color.new(0.294,0.294,1)
+						end
+					end
+					plr.character:setNameTag( "[ "..tostring(Distance).." Blocks ] ".. Player:getName(), Color )
+				else
+					plr.character:setNameTag( "" )
+				end
 			end
 		end
 	end

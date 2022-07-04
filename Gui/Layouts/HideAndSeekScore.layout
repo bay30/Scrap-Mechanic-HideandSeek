@@ -1,161 +1,161 @@
 ﻿<?xml version="1.0" encoding="UTF-8"?>
 <MyGUI type="Layout" version="3.2.0">
-    <Widget type="Widget" skin="PanelEmpty" position_real="0.66041666666666665 0.077777777777777779 0.32604166666666667 0.82962962962962961">
+    <Widget type="Widget" skin="PanelEmpty" position_real="0.659896 0.0777778 0.326042 0.828704">
         <Property key="NeedKey" value="false"/>
         <Property key="NeedMouse" value="false"/>
-        <Widget type="Widget" skin="TutorialBgMain" position_real="0.089456869009584661 0.056919642857142856 0.81309904153354629 0.7299107142857143" name="BgMain">
-            <Widget type="TextBox" skin="TextBox" position_real="0.056974459724950882 0.025993883792048929 0.88212180746561886 0.081039755351681952" name="TextTitle">
+        <Widget type="Widget" skin="TutorialBgMain" position_real="0.0894569 0.0558659 0.811502 0.729609" name="BgMain">
+            <Widget type="TextBox" skin="TextBox" position_real="0.0551181 0.0245023 0.88189 0.0796325" name="TextTitle">
                 <Property key="TextAlign" value="Center"/>
                 <Property key="TextColour" value="1 1 1"/>
                 <Property key="FontName" value="X_Hud_Alert"/>
             </Widget>
-            <Widget type="TextBox" skin="TextBox" position_real="0.058939096267190572 0.18195718654434251 0.37131630648330061 0.055045871559633031" name="Player1">
+            <Widget type="TextBox" skin="TextBox" position_real="0.0570866 0.180704 0.370079 0.0535988" name="Player1">
                 <Property key="TextColour" value="0.649123 0.649123 0.649123"/>
                 <Property key="FontName" value="X_Hud_Alert"/>
                 <Property key="Caption" value="Player"/>
                 <Property key="TextAlign" value="Right VCenter"/>
             </Widget>
-            <Widget type="TextBox" skin="TextBox" position_real="0.058939096267190572 0.28287461773700306 0.37131630648330061 0.055045871559633031" name="Player2">
+            <Widget type="TextBox" skin="TextBox" position_real="0.0570866 0.281776 0.370079 0.0535988" name="Player2">
                 <Property key="TextColour" value="0.649123 0.649123 0.649123"/>
                 <Property key="FontName" value="X_Hud_Alert"/>
                 <Property key="TextAlign" value="Right VCenter"/>
                 <Property key="Caption" value="Player"/>
             </Widget>
-            <Widget type="TextBox" skin="TextBox" position_real="0.058939096267190572 0.38532110091743121 0.37131630648330061 0.055045871559633031" name="Player3">
+            <Widget type="TextBox" skin="TextBox" position_real="0.0570866 0.38438 0.370079 0.0535988" name="Player3">
                 <Property key="TextColour" value="0.649123 0.649123 0.649123"/>
                 <Property key="FontName" value="X_Hud_Alert"/>
                 <Property key="Caption" value="Player"/>
                 <Property key="TextAlign" value="Right VCenter"/>
             </Widget>
-            <Widget type="TextBox" skin="TextBox" position_real="0.058939096267190572 0.48623853211009177 0.37131630648330061 0.055045871559633031" name="Player4">
+            <Widget type="TextBox" skin="TextBox" position_real="0.0570866 0.485452 0.370079 0.0535988" name="Player4">
                 <Property key="TextColour" value="0.649123 0.649123 0.649123"/>
                 <Property key="FontName" value="X_Hud_Alert"/>
                 <Property key="Caption" value="Player"/>
                 <Property key="TextAlign" value="Right VCenter"/>
             </Widget>
-            <Widget type="TextBox" skin="TextBox" position_real="0.058939096267190572 0.58715596330275233 0.37131630648330061 0.055045871559633031" name="Player5">
+            <Widget type="TextBox" skin="TextBox" position_real="0.0570866 0.586524 0.370079 0.0535988" name="Player5">
                 <Property key="TextColour" value="0.649123 0.649123 0.649123"/>
                 <Property key="FontName" value="X_Hud_Alert"/>
                 <Property key="Caption" value="Player"/>
                 <Property key="TextAlign" value="Right VCenter"/>
             </Widget>
-            <Widget type="TextBox" skin="TextBox" position_real="0.058939096267190572 0.68807339449541283 0.37131630648330061 0.055045871559633031" name="Player6">
+            <Widget type="TextBox" skin="TextBox" position_real="0.0570866 0.687596 0.370079 0.0535988" name="Player6">
                 <Property key="TextColour" value="0.649123 0.649123 0.649123"/>
                 <Property key="FontName" value="X_Hud_Alert"/>
                 <Property key="Caption" value="Player"/>
                 <Property key="TextAlign" value="Right VCenter"/>
             </Widget>
-            <Widget type="TextBox" skin="TextBox" position_real="0.058939096267190572 0.78899082568807344 0.37131630648330061 0.055045871559633031" name="Player7">
+            <Widget type="TextBox" skin="TextBox" position_real="0.0570866 0.788668 0.370079 0.0535988" name="Player7">
                 <Property key="TextColour" value="0.649123 0.649123 0.649123"/>
                 <Property key="FontName" value="X_Hud_Alert"/>
                 <Property key="Caption" value="Player"/>
                 <Property key="TextAlign" value="Right VCenter"/>
             </Widget>
-            <Widget type="TextBox" skin="TextBox" position_real="0.058939096267190572 0.88990825688073394 0.37131630648330061 0.055045871559633031" name="Player8">
+            <Widget type="TextBox" skin="TextBox" position_real="0.0570866 0.88974 0.370079 0.0535988" name="Player8">
                 <Property key="TextColour" value="0.649123 0.649123 0.649123"/>
                 <Property key="FontName" value="X_Hud_Alert"/>
                 <Property key="Caption" value="Player"/>
                 <Property key="TextAlign" value="Right VCenter"/>
             </Widget>
-            <Widget type="TextBox" skin="TextBox" position_real="0.49115913555992141 0.18042813455657492 0.098231827111984277 0.055045871559633031" name="TextScore1">
+            <Widget type="TextBox" skin="TextBox" position_real="0.490157 0.179173 0.0964567 0.0535988" name="TextScore1">
                 <Property key="TextColour" value="0.649123 0.649123 0.649123"/>
                 <Property key="FontName" value="X_Hud_Alert"/>
                 <Property key="Caption" value="N/A"/>
                 <Property key="TextAlign" value="Left VCenter"/>
             </Widget>
-            <Widget type="TextBox" skin="TextBox" position_real="0.49115913555992141 0.28287461773700306 0.098231827111984277 0.055045871559633031" name="TextScore2">
+            <Widget type="TextBox" skin="TextBox" position_real="0.490157 0.281776 0.0964567 0.0535988" name="TextScore2">
                 <Property key="TextColour" value="0.649123 0.649123 0.649123"/>
                 <Property key="FontName" value="X_Hud_Alert"/>
                 <Property key="Caption" value="N/A"/>
                 <Property key="TextAlign" value="Left VCenter"/>
             </Widget>
-            <Widget type="TextBox" skin="TextBox" position_real="0.49115913555992141 0.38532110091743121 0.098231827111984277 0.055045871559633031" name="TextScore3">
+            <Widget type="TextBox" skin="TextBox" position_real="0.490157 0.38438 0.0964567 0.0535988" name="TextScore3">
                 <Property key="TextColour" value="0.649123 0.649123 0.649123"/>
                 <Property key="FontName" value="X_Hud_Alert"/>
                 <Property key="Caption" value="N/A"/>
                 <Property key="TextAlign" value="Left VCenter"/>
             </Widget>
-            <Widget type="TextBox" skin="TextBox" position_real="0.49115913555992141 0.48623853211009177 0.098231827111984277 0.055045871559633031" name="TextScore4">
+            <Widget type="TextBox" skin="TextBox" position_real="0.490157 0.485452 0.0964567 0.0535988" name="TextScore4">
                 <Property key="TextColour" value="0.649123 0.649123 0.649123"/>
                 <Property key="FontName" value="X_Hud_Alert"/>
                 <Property key="Caption" value="N/A"/>
                 <Property key="TextAlign" value="Left VCenter"/>
             </Widget>
-            <Widget type="TextBox" skin="TextBox" position_real="0.49115913555992141 0.58715596330275233 0.098231827111984277 0.055045871559633031" name="TextScore5">
+            <Widget type="TextBox" skin="TextBox" position_real="0.490157 0.586524 0.0964567 0.0535988" name="TextScore5">
                 <Property key="TextColour" value="0.649123 0.649123 0.649123"/>
                 <Property key="FontName" value="X_Hud_Alert"/>
                 <Property key="Caption" value="N/A"/>
                 <Property key="TextAlign" value="Left VCenter"/>
             </Widget>
-            <Widget type="TextBox" skin="TextBox" position_real="0.49115913555992141 0.68807339449541283 0.098231827111984277 0.055045871559633031" name="TextScore6">
+            <Widget type="TextBox" skin="TextBox" position_real="0.490157 0.687596 0.0964567 0.0535988" name="TextScore6">
                 <Property key="TextColour" value="0.649123 0.649123 0.649123"/>
                 <Property key="FontName" value="X_Hud_Alert"/>
                 <Property key="Caption" value="N/A"/>
                 <Property key="TextAlign" value="Left VCenter"/>
             </Widget>
-            <Widget type="TextBox" skin="TextBox" position_real="0.49115913555992141 0.78899082568807344 0.098231827111984277 0.055045871559633031" name="TextScore7">
+            <Widget type="TextBox" skin="TextBox" position_real="0.490157 0.788668 0.0964567 0.0535988" name="TextScore7">
                 <Property key="TextColour" value="0.649123 0.649123 0.649123"/>
                 <Property key="FontName" value="X_Hud_Alert"/>
                 <Property key="Caption" value="N/A"/>
                 <Property key="TextAlign" value="Left VCenter"/>
             </Widget>
-            <Widget type="TextBox" skin="TextBox" position_real="0.49115913555992141 0.88990825688073394 0.098231827111984277 0.055045871559633031" name="TextScore8">
+            <Widget type="TextBox" skin="TextBox" position_real="0.490157 0.88974 0.0964567 0.0535988" name="TextScore8">
                 <Property key="TextColour" value="0.649123 0.649123 0.649123"/>
                 <Property key="FontName" value="X_Hud_Alert"/>
                 <Property key="Caption" value="N/A"/>
                 <Property key="TextAlign" value="Left VCenter"/>
             </Widget>
-            <Widget type="TextBox" skin="TextBox" position_real="0.64833005893909623 0.18042813455657492 0.24950884086444008 0.055045871559633031" name="TextTime1">
+            <Widget type="TextBox" skin="TextBox" position_real="0.647638 0.179173 0.248031 0.0535988" name="TextTime1">
                 <Property key="TextColour" value="0.649123 0.649123 0.649123"/>
                 <Property key="FontName" value="X_Hud_Alert"/>
                 <Property key="Caption" value="N/A"/>
                 <Property key="TextAlign" value="Left VCenter"/>
             </Widget>
-            <Widget type="TextBox" skin="TextBox" position_real="0.64833005893909623 0.28287461773700306 0.24950884086444008 0.055045871559633031" name="TextTime2">
+            <Widget type="TextBox" skin="TextBox" position_real="0.647638 0.281776 0.248031 0.0535988" name="TextTime2">
                 <Property key="TextColour" value="0.649123 0.649123 0.649123"/>
                 <Property key="FontName" value="X_Hud_Alert"/>
                 <Property key="Caption" value="N/A"/>
                 <Property key="TextAlign" value="Left VCenter"/>
             </Widget>
-            <Widget type="TextBox" skin="TextBox" position_real="0.64833005893909623 0.38532110091743121 0.24950884086444008 0.055045871559633031" name="TextTime3">
+            <Widget type="TextBox" skin="TextBox" position_real="0.647638 0.38438 0.248031 0.0535988" name="TextTime3">
                 <Property key="TextColour" value="0.649123 0.649123 0.649123"/>
                 <Property key="FontName" value="X_Hud_Alert"/>
                 <Property key="Caption" value="N/A"/>
                 <Property key="TextAlign" value="Left VCenter"/>
             </Widget>
-            <Widget type="TextBox" skin="TextBox" position_real="0.64833005893909623 0.48623853211009177 0.24950884086444008 0.055045871559633031" name="TextTime4">
+            <Widget type="TextBox" skin="TextBox" position_real="0.647638 0.485452 0.248031 0.0535988" name="TextTime4">
                 <Property key="TextColour" value="0.649123 0.649123 0.649123"/>
                 <Property key="FontName" value="X_Hud_Alert"/>
                 <Property key="Caption" value="N/A"/>
                 <Property key="TextAlign" value="Left VCenter"/>
             </Widget>
-            <Widget type="TextBox" skin="TextBox" position_real="0.64833005893909623 0.58715596330275233 0.24950884086444008 0.055045871559633031" name="TextTime5">
+            <Widget type="TextBox" skin="TextBox" position_real="0.647638 0.586524 0.248031 0.0535988" name="TextTime5">
                 <Property key="TextColour" value="0.649123 0.649123 0.649123"/>
                 <Property key="FontName" value="X_Hud_Alert"/>
                 <Property key="Caption" value="N/A"/>
                 <Property key="TextAlign" value="Left VCenter"/>
             </Widget>
-            <Widget type="TextBox" skin="TextBox" position_real="0.64833005893909623 0.68807339449541283 0.24950884086444008 0.055045871559633031" name="TextTime6">
+            <Widget type="TextBox" skin="TextBox" position_real="0.647638 0.687596 0.248031 0.0535988" name="TextTime6">
                 <Property key="TextColour" value="0.649123 0.649123 0.649123"/>
                 <Property key="FontName" value="X_Hud_Alert"/>
                 <Property key="Caption" value="N/A"/>
                 <Property key="TextAlign" value="Left VCenter"/>
             </Widget>
-            <Widget type="TextBox" skin="TextBox" position_real="0.64833005893909623 0.78899082568807344 0.24950884086444008 0.055045871559633031" name="TextTime7">
+            <Widget type="TextBox" skin="TextBox" position_real="0.647638 0.788668 0.248031 0.0535988" name="TextTime7">
                 <Property key="TextColour" value="0.649123 0.649123 0.649123"/>
                 <Property key="FontName" value="X_Hud_Alert"/>
                 <Property key="Caption" value="N/A"/>
                 <Property key="TextAlign" value="Left VCenter"/>
             </Widget>
-            <Widget type="TextBox" skin="TextBox" position_real="0.64833005893909623 0.88990825688073394 0.24950884086444008 0.055045871559633031" name="TextTime8">
+            <Widget type="TextBox" skin="TextBox" position_real="0.647638 0.88974 0.248031 0.0535988" name="TextTime8">
                 <Property key="TextColour" value="0.649123 0.649123 0.649123"/>
                 <Property key="FontName" value="X_Hud_Alert"/>
                 <Property key="Caption" value="N/A"/>
                 <Property key="TextAlign" value="Left VCenter"/>
             </Widget>
         </Widget>
-        <Widget type="Widget" skin="TutorialBgBottom" position="56 705 509 75" name="BgBottom">
-            <Widget type="TextBox" skin="TextBox" position_real="0.17485265225933203 0.13333333333333333 0.64636542239685657 0.68000000000000005" name="TextDismiss">
+        <Widget type="Widget" skin="TutorialBgBottom" position_real="0.0894569 0.787709 0.813099 0.0837989" name="BgBottom">
+            <Widget type="TextBox" skin="TextBox" position_real="0.174853 0.133333 0.644401 0.68" name="TextDismiss">
                 <Property key="TextAlign" value="Center"/>
                 <Property key="TextColour" value="1 1 1"/>
                 <Property key="FontName" value="SM_Button"/>
