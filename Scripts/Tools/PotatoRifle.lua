@@ -25,7 +25,8 @@ sm.tool.preloadRenderables( renderablesFp )
 function PotatoRifle.client_onCreate( self )
 	self.shootEffect = sm.effect.createEffect( "SpudgunBasic - BasicMuzzel" )
 	self.shootEffectFP = sm.effect.createEffect( "SpudgunBasic - FPBasicMuzzel" )
-	self.showkeys = true
+	self.userheld = false
+	self.lastState = false
 end
 
 function PotatoRifle.client_onRefresh( self )
@@ -38,12 +39,15 @@ function PotatoRifle.client_onReload( self )
 end
 
 function PotatoRifle.client_onToggle( self )
-	self.showkeys = not self.showkeys
+	self.showkeys = os.clock()+3
     return true
 end
 
 function PotatoRifle.loadAnimations( self )
-
+	if not self.userheld then
+		self.showkeys = os.clock()+5
+		self.userheld = true
+	end
 	self.tpAnimations = createTpAnimations(
 		self.tool,
 		{
@@ -650,12 +654,18 @@ function PotatoRifle.cl_onSecondaryUse( self, state )
 	end
 end
 
-function PotatoRifle.client_onEquippedUpdate( self, primaryState, secondaryState )
+function PotatoRifle.client_onEquippedUpdate( self, primaryState, secondaryState, forceBuild )
 
-	if self.showkeys then
-		sm.gui.setInteractionText( "", "<p textShadow='false' bg='gui_keybinds_bg_orange' color='#66440C' spacing='9'>"..sm.gui.getKeyBinding( "NextCreateRotation" ).."</p>", "Show/Hide Keys" )
-		sm.gui.setInteractionText( "", "<p textShadow='false' bg='gui_keybinds_bg_orange' color='#66440C' spacing='9'>"..sm.gui.getKeyBinding( "Reload" ).."</p>", "Score Board" )
+	if self.showkeys > os.clock() then
+		--sm.gui.setInteractionText( "", "<p textShadow='false' bg='gui_keybinds_bg_orange' color='#66440C' spacing='9'>"..sm.gui.getKeyBinding( "NextCreateRotation" ).."</p>", "Show/Hide Keys" )
+		sm.gui.setInteractionText( "", sm.gui.getKeyBinding( "Reload", true ), "Score Board" )
+		sm.gui.setInteractionText( "", sm.gui.getKeyBinding( "ForceBuild", true ), "Taunt" )
 	end
+	
+	if forceBuild and self.LastState == false then
+		sm.event.sendToGame("client_onTaunt")
+	end
+	self.LastState = forceBuild
 	
 	if primaryState ~= self.prevPrimaryState then
 		self:cl_onPrimaryUse( primaryState )

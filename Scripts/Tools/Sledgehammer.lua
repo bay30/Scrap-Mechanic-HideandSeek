@@ -39,7 +39,8 @@ Sledgehammer.swingExits = { "sledgehammer_exit1", "sledgehammer_exit2" }
 function Sledgehammer.client_onCreate( self )
 	self.isLocal = self.tool:isLocal()
 	self:init()
-	self.showkeys = true
+	self.userheld = false
+	self.lastState = false
 end
 
 function Sledgehammer.client_onRefresh( self )
@@ -53,7 +54,7 @@ function Sledgehammer.client_onReload( self )
 end
 
 function Sledgehammer.client_onToggle( self )
-	self.showkeys = not self.showkeys
+	self.showkeys = os.clock()+3
     return true
 end
 
@@ -89,7 +90,10 @@ function Sledgehammer.init( self )
 end
 
 function Sledgehammer.loadAnimations( self )
-
+	if not self.userheld then
+		self.showkeys = os.clock()+5
+		self.userheld = true
+	end
 	self.tpAnimations = createTpAnimations(
 		self.tool,
 		{
@@ -337,16 +341,22 @@ end
 --	character:setTumbling( not character:isTumbling() )
 --end
 
-function Sledgehammer.client_onEquippedUpdate( self, primaryState, secondaryState )
+function Sledgehammer.client_onEquippedUpdate( self, primaryState, secondaryState, forceBuild )
 	--HACK Enter/exit tumble state when hammering
 	--if primaryState == sm.tool.interactState.start then
 	--	self.network:sendToServer( "sv_n_toggleTumble" )
 	--end
 
-	if self.showkeys then
-		sm.gui.setInteractionText( "", "<p textShadow='false' bg='gui_keybinds_bg_orange' color='#66440C' spacing='9'>"..sm.gui.getKeyBinding( "NextCreateRotation" ).."</p>", "Show/Hide Keys" )
-		sm.gui.setInteractionText( "", "<p textShadow='false' bg='gui_keybinds_bg_orange' color='#66440C' spacing='9'>"..sm.gui.getKeyBinding( "Reload" ).."</p>", "Score Board" )
+	if self.showkeys > os.clock() then
+		--sm.gui.setInteractionText( "", sm.gui.getKeyBinding( "NextCreateRotation",true ), "Show/Hide Keys" )
+		sm.gui.setInteractionText( "", sm.gui.getKeyBinding( "Reload", true ), "Score Board" )
+		sm.gui.setInteractionText( "", sm.gui.getKeyBinding( "ForceBuild", true ), "Taunt" )
 	end
+	
+	if forceBuild and self.LastState == false then
+		sm.event.sendToGame("client_onTaunt")
+	end
+	self.LastState = forceBuild
 
 	if self.pendingRaycastFlag then
 		local time = 0.0

@@ -152,6 +152,12 @@ function Game.server_onTag( self, args )
 	end
 end
 
+function Game.server_onTaunt( self, args, player )
+	if player.character then
+		self.network:sendToClients("client_createEffect",{name="Horn",pos=player.character:getWorldPosition()-sm.vec3.new(0,0.5,0),rot=sm.quat.fromEuler(sm.vec3.new(90,0,0))}) 
+	end
+end
+
 function Game.server_getTableLength( self, tab )
 	local a = 0
 	for key,item in pairs(tab) do
@@ -503,6 +509,14 @@ function Game.client_onCommand( self, args )
 	elseif args[1] == "/fly" then
 		self.network:sendToServer("server_fly")
 	end
+end
+
+function Game.client_onTaunt( self, args )
+	self.network:sendToServer("server_onTaunt",args)
+end
+
+function Game.client_createEffect( self, args )
+	sm.event.sendToWorld(sm.localPlayer.getPlayer().character:getWorld(),"client_createEffect",args)
 end
 
 function Game.server_fly( self, params, player )

@@ -164,7 +164,11 @@ function World.client_destroyFloor( self )
 end
 
 function World.client_celebrate( self )
-	sm.effect.playEffect( "Supervisor - Cheer", sm.vec3.new( 0, 258, 162 ) )
+	sm.effect.playEffect( "Horn", sm.vec3.new( 0, 258, 162 ) )
+end
+
+function World.client_createEffect( self, args )
+	sm.effect.playEffect( args.name, args.pos or sm.vec3.new(0,0,0), args.velocity or sm.vec3.new(0,0,0), args.rot or sm.quat.identity(), args.scale or sm.vec3.new(1,1,1), args.parameter or {} )
 end
 
 function World.client_onCellLoaded( self, x, y )
