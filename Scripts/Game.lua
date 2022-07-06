@@ -74,6 +74,7 @@ function Game.server_onFixedUpdate( self, delta )
 	for key,info in pairs(sm.hideandseek.score) do
 		if sm.hideandseek.seekers[key] == nil then
 			info.hidetime = os.clock() - G_ChallengeStartTick
+			self.network:sendToClients("client_badCode2",sm.hideandseek.score)
 			Hiders = Hiders + 1
 		end
 	end
@@ -137,16 +138,21 @@ function Game.server_onTag( self, args )
 			if not sm.hideandseek.seekers[args["tagged"].id] and sm.hideandseek.seekers[args["tagger"].id]["seeker"] then
 				if sm.hideandseek.BecomeSeekers then
 					sm.hideandseek.seekers[args["tagged"].id] = {args["tagged"],seeker=true}
+					self.network:sendToClients("client_badCode",sm.hideandseek.seekers)
 				else
 					sm.hideandseek.seekers[args["tagged"].id] = {args["tagged"],seeker=false}
+					self.network:sendToClients("client_badCode",sm.hideandseek.seekers)
 				end
 				sm.hideandseek.score[args["tagger"].id].tags = sm.hideandseek.score[args["tagger"].id].tags + 1
+				self.network:sendToClients("client_badCode2",sm.hideandseek.score)
 			end
 		elseif args["tagger"].id == 1 and sm.hideandseek.settings.PickSeekers and not sm.challenge.hasStarted() and not self.sv.countdownStarted then
 			if sm.hideandseek.seekers[args["tagged"].id] then
 				sm.hideandseek.seekers[args["tagged"].id] = nil
+				self.network:sendToClients("client_badCode",sm.hideandseek.seekers)
 			else
 				sm.hideandseek.seekers[args["tagged"].id] = {args["tagged"],seeker=true}
+				self.network:sendToClients("client_badCode",sm.hideandseek.seekers)
 			end
 		end
 	end
@@ -156,6 +162,13 @@ function Game.server_onTaunt( self, args, player )
 	if player.character then
 		self.network:sendToClients("client_createEffect",{name="Horn",pos=player.character:getWorldPosition()-sm.vec3.new(0,0.5,0),rot=sm.quat.fromEuler(sm.vec3.new(90,0,0))}) 
 	end
+end
+
+function Game.server_setValues( self, args )
+	sm.hideandseek.settings = args.settings or {}
+	sm.hideandseek.tiles = args.tiles or {}
+	sm.hideandseek.world = args.world or ""
+	sm.hideandseek.blueprints = args.blueprints or {}
 end
 
 function Game.server_getTableLength( self, tab )
@@ -198,6 +211,7 @@ function Game.server_load( self, args )
 				sm.hideandseek.seekers[Selected.id] = {Selected,seeker=true}
 				table.remove(Selection,Number)
 			end
+			self.network:sendToClients("client_badCode",sm.hideandseek.seekers)
 		end
 	
 		-- Seekers --
@@ -268,6 +282,7 @@ end
 function Game.server_setWorld( self, args )
 	if args == "build" then
 		sm.hideandseek.seekers = {}
+		self.network:sendToClients("client_badCode",sm.hideandseek.seekers)
 		sm.challenge.stop()
 		sm.game.setLimitedInventory(false)
 		self.sv.gameRunning = false
@@ -341,6 +356,11 @@ function Game.client_onCreate( self )
 	sm.challenge.hasStarted = function()
 		return G_ChallengeStarted
 	end
+	
+	if not sm.isHost() then
+		sm.hideandseek = {}
+		sm.hideandseek.seekers = {}
+	end
 
 	if g_unitManager == nil then
 		assert( not sm.isHost )
@@ -399,7 +419,7 @@ function Game.client_onFixedUpdate( self )
 	end
 	local Player = sm.localPlayer.getPlayer()
 	local AmSeeker = false
-	if sm.hideandseek.seekers[Player.id] and sm.hideandseek.seekers[Player.id]["seeker"] then
+	if sm.hideandseek.seekers and sm.hideandseek.seekers[Player.id] and sm.hideandseek.seekers[Player.id]["seeker"] then
 		AmSeeker = true
 	end
 	if Player and Player.character then
@@ -415,7 +435,7 @@ function Game.client_onFixedUpdate( self )
 							Color = sm.color.new(0.294,0.294,1)
 						end
 					end
-					plr.character:setNameTag( "[ "..tostring(Distance).." Blocks ] ".. Player:getName(), Color )
+					plr.character:setNameTag( "[ "..tostring(Distance).." Blocks ] ".. plr:getName(), Color )
 				else
 					plr.character:setNameTag( "" )
 				end
@@ -517,6 +537,14 @@ end
 
 function Game.client_createEffect( self, args )
 	sm.event.sendToWorld(sm.localPlayer.getPlayer().character:getWorld(),"client_createEffect",args)
+end
+
+function Game.client_badCode( self, args )
+	sm.hideandseek.seekers = args
+end
+
+function Game.client_badCode2( self, args )
+	sm.hideandseek.score = args
 end
 
 function Game.server_fly( self, params, player )

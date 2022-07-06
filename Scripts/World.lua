@@ -56,7 +56,7 @@ end
 
 function World.server_onCreate( self )
 	ChallengeBaseWorld.server_onCreate( self )
-    	self.waterManager = WaterManager()
+    self.waterManager = WaterManager()
 	self.waterManager:sv_onCreate( self )
 	self.sv = {}
 	if data == nil then data = {} end
@@ -141,7 +141,7 @@ end
 function World.client_onCreate( self )
 	ChallengeBaseWorld.client_onCreate( self )
 	self.cl = {}
-	if self.sv.displayFloor then
+	if self.sv and self.sv.displayFloor then
 		self.cl.floorEffect = sm.effect.createEffect( "BuildMode - Floor" )
 		self.cl.floorEffect:start()
 	end

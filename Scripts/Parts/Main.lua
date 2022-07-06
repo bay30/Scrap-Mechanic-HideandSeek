@@ -27,10 +27,7 @@ function Main.server_onDestroy( self )
 end
 
 function Main.server_setValues( self )
-	sm.hideandseek.settings = self.sv.saved.settings
-	sm.hideandseek.tiles = self.sv.saved.tiles
-	sm.hideandseek.world = self.sv.saved.world
-	sm.hideandseek.blueprints = self.sv.saved.blueprints
+	sm.event.sendToGame("server_setValues",self.sv.saved)
 end
 
 function Main.server_save( self )
