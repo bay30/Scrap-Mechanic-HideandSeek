@@ -21,7 +21,7 @@ function Game.createCharacterOnSpawner( self, player, playerSpawners, defaultPos
 	end
 	return spawnPosition,pitch,yaw
 end
-
+			
 function Game.server_onCreate( self )
 
 	g_unitManager = UnitManager()
@@ -42,11 +42,11 @@ function Game.server_onCreate( self )
 	end
 	sm.challenge.start = function()
 		if not G_ChallengeStarted then
-			G_ChallengeStarted = true
-			G_ChallengeStartTick = os.clock()
 			for key,plr in pairs(sm.player.getAllPlayers()) do
 				sm.hideandseek.score[plr.id] = {plr=plr,tags=0,hidetime=0}
 			end
+			G_ChallengeStarted = true
+			G_ChallengeStartTick = os.clock()
 		end
 	end
 	sm.challenge.stop = function()
@@ -88,7 +88,7 @@ function Game.server_onFixedUpdate( self, delta )
 					for key,plr in pairs(sm.player.getAllPlayers()) do
 						if plr.character then
 							if sm.hideandseek.seekers[plr.id] == nil then
-								sm.event.sendToWorld(self.sv.activeWorld,"createCharacterOnSpawner",{players=sm.player.getAllPlayers(),uuid="b5858089-b1f8-4d13-a485-fdcb204d9c6b"})
+								sm.event.sendToWorld(self.sv.activeWorld,"createCharacterOnSpawner",{players={plr},uuid="b5858089-b1f8-4d13-a485-fdcb204d9c6b"})
 							end
 						end
 					end
@@ -110,7 +110,13 @@ function Game.server_onFixedUpdate( self, delta )
 			sm.challenge.start()
 			self.sv.countdownTime = self.sv.countdownTime - delta
 			self.network:sendToClients("client_displayAlert","Seekers have been released")
-			sm.event.sendToWorld(self.sv.activeWorld,"createCharacterOnSpawner",{players=sm.player.getAllPlayers(),uuid="b5858089-d1f8-4d13-a485-fdcb204d9c6b"})
+			local FilteredPlayers = {}
+			for _,plr in pairs(sm.player.getAllPlayers()) do
+				if sm.hideandseek.seekers[plr.id] then
+					table.insert(FilteredPlayers,plr)
+				end
+			end
+			sm.event.sendToWorld(self.sv.activeWorld,"createCharacterOnSpawner",{players=FilteredPlayers,uuid="b5858089-d1f8-4d13-a485-fdcb204d9c6b"})
 		end
 	end
 	if sm.challenge.hasStarted() and sm.hideandseek.settings.GameTime and sm.hideandseek.settings.GameTime ~= 0 then
