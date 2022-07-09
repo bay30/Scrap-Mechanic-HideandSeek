@@ -357,7 +357,7 @@ function Game.client_onCreate( self )
 		return G_ChallengeStarted
 	end
 	
-	if not sm.isHost() then
+	if not sm.isHost then
 		sm.hideandseek = {}
 		sm.hideandseek.seekers = {}
 	end
