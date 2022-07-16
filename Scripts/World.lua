@@ -92,9 +92,9 @@ end
 
 function World.server_onMelee( self, position, attacker, target, damage, power, direction, normal )
 	local Down = attacker.character:isCrouching()
-	if Down then
+	if not Down then
 		if sm.exists(target) and sm.exists(attacker) then
-			if type(target) == "Character" and not Down then
+			if type(target) == "Character" then
 				local player = target:getPlayer()
 				if player then
 					sm.event.sendToGame("server_onTag",{tagger=attacker,tagged=player})
