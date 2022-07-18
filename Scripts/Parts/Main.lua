@@ -34,17 +34,19 @@ function Main.server_save( self )
 	
 	--local CustomWorld = "$CONTENT_8b575391-5eb4-488e-980e-01352a88a1ad/world.world" -- Make sure your world and any custom tiles are include the blueprint $CONTENT_BLUEPRINTUUID/worldname.world (includes terrain)
 	--local CustomTiles = {} -- Make sure the tiles are instead your blueprint $CONTENT_BLUEPRINTUUID/tilename.tile (these include no terrain)
+	self.sv.saved = {}
+	
+	self.sv.saved.blueprints = {}
+	for key,creation in pairs(sm.body.getCreationsFromBodies(sm.body.getAllBodies())) do
+		local blueprint = sm.creation.exportToString( creation[1], true, false )
+		table.insert(self.sv.saved.blueprints,blueprint)
+	end
 	
 	self.sv.saved.world = CustomWorld or ""
 	self.sv.saved.tiles = CustomTiles or {"$CONTENT_DATA/Terrain/Tiles/challengemode_env_DT.tile","$CONTENT_DATA/Terrain/Tiles/ChallengeBuilderDefault.tile"}
 
 	if sm.hideandseek then
 		self.sv.saved.settings = sm.hideandseek.settings
-	end
-	self.sv.saved.blueprints = {}
-	for key,creation in pairs(sm.body.getCreationsFromBodies(sm.body.getAllBodies())) do
-		local blueprint = sm.creation.exportToString( creation[1], true, false )
-		table.insert(self.sv.saved.blueprints,blueprint)
 	end
 	local success,result = pcall(function()
 		self.storage:save( self.sv.saved )
