@@ -43,10 +43,11 @@ function Game.server_onCreate( self )
 	sm.challenge.start = function()
 		if not G_ChallengeStarted then
 			for key,plr in pairs(sm.player.getAllPlayers()) do
-				sm.hideandseek.score[plr.id] = {plr=plr,tags=0,hidetime=0}
+				sm.hideandseek.score[plr.id] = {plr=plr,tags=0}
 			end
 			G_ChallengeStarted = true
-			G_ChallengeStartTick = os.clock()
+			G_ChallengeStartTick = os.time()
+			self.network:sendToClients("client_badCode3",G_ChallengeStartTick)
 		end
 	end
 	sm.challenge.stop = function()
@@ -67,14 +68,16 @@ function Game.server_onCreate( self )
 	sm.game.bindChatCommand("/return",{},"server_onCommand","Returns everyone to the build world.")
 end
 
+function Game.server_onRefresh(self)
+	self:server_onTag({tagger=sm.player.getAllPlayers()[1],tagged=sm.player.getAllPlayers()[1]})
+end
+
 function Game.server_onFixedUpdate( self, delta )
 	g_unitManager:sv_onFixedUpdate()
 	if not self.sv.gameRunning then return end
 	local Hiders = 0
 	for key,info in pairs(sm.hideandseek.score) do
 		if sm.hideandseek.seekers[key] == nil then
-			info.hidetime = os.clock() - G_ChallengeStartTick
-			self.network:sendToClients("client_badCode2",sm.hideandseek.score)
 			Hiders = Hiders + 1
 		end
 	end
@@ -120,7 +123,7 @@ function Game.server_onFixedUpdate( self, delta )
 		end
 	end
 	if sm.challenge.hasStarted() and sm.hideandseek.settings.GameTime and sm.hideandseek.settings.GameTime ~= 0 then
-		local seconds = (G_ChallengeStartTick+sm.hideandseek.settings.GameTime)-os.clock()
+		local seconds = (G_ChallengeStartTick+sm.hideandseek.settings.GameTime)-os.time()
 		local minutes = seconds/60
 		local hours = minutes/60
 		self.network:sendToClients("client_displayTimer",string.format( "%02i:%02i:%02i", hours%60, minutes%60, seconds%60 ))
@@ -150,14 +153,17 @@ function Game.server_onTag( self, args )
 					self.network:sendToClients("client_badCode",sm.hideandseek.seekers)
 				end
 				sm.hideandseek.score[args["tagger"].id].tags = sm.hideandseek.score[args["tagger"].id].tags + 1
+				sm.hideandseek.score[args["tagged"].id].hidetime = os.time()
 				self.network:sendToClients("client_badCode2",sm.hideandseek.score)
 			end
 		elseif args["tagger"].id == 1 and sm.hideandseek.settings.PickSeekers and not sm.challenge.hasStarted() and not self.sv.countdownStarted then
 			if sm.hideandseek.seekers[args["tagged"].id] then
 				sm.hideandseek.seekers[args["tagged"].id] = nil
+				sm.hideandseek.score[args["tagged"].id].hidetime = nil
 				self.network:sendToClients("client_badCode",sm.hideandseek.seekers)
 			else
 				sm.hideandseek.seekers[args["tagged"].id] = {args["tagged"],seeker=true}
+				sm.hideandseek.score[args["tagged"].id].hidetime = nil
 				self.network:sendToClients("client_badCode",sm.hideandseek.seekers)
 			end
 		end
@@ -324,7 +330,9 @@ function Game.server_onPlayerJoined( self, player, isNewPlayer )
 		sm.gui.chatMessage("[------------------------]\nWelcome to hide & seek gamemode!")
 	end
 	
-	sm.hideandseek.score[player.id] = {plr=player,tags=0,hidetime=0}
+	sm.hideandseek.score[player.id] = {plr=player,tags=0}
+	self.network:sendToClients("client_badCode2",sm.hideandseek.score)
+	self.network:sendToClients("client_badCode3",G_ChallengeStartTick)
 	
 end
 
@@ -366,6 +374,9 @@ function Game.client_onCreate( self )
 	if not sm.isHost then
 		sm.hideandseek = {}
 		sm.hideandseek.seekers = {}
+		if not G_ChallengeStartTick then
+			G_ChallengeStartTick = 0
+		end
 	end
 
 	if g_unitManager == nil then
@@ -411,11 +422,11 @@ function Game.client_onFixedUpdate( self )
 				self.cl.gui.score.gui:setText("Player"..i,tostring(score.plr:getName()))
 				self.cl.gui.score.gui:setText("TextScore"..i,tostring(score.tags))
 				
-				local seconds = score.hidetime % 60
-				local minutes = ( score.hidetime / 60 ) % 60
-				local hours = ( ( score.hidetime / 60 ) / 60 ) % 60
+				local seconds = ( score.hidetime or os.time() ) - G_ChallengeStartTick
+				local minutes = seconds/ 60 % 60
+				local hours = minutes/ 60 % 60
 				
-				self.cl.gui.score.gui:setText("TextTime"..i,string.format( "%02i:%02i:%02i", hours, minutes, seconds ))
+				self.cl.gui.score.gui:setText("TextTime"..i,string.format( "%02i:%02i:%02i", hours, minutes, seconds % 60 ))
 			else
 				self.cl.gui.score.gui:setText("Player"..i, "Player")
 				self.cl.gui.score.gui:setText("TextScore"..i,"N/A")
@@ -546,11 +557,21 @@ function Game.client_createEffect( self, args )
 end
 
 function Game.client_badCode( self, args )
-	sm.hideandseek.seekers = args
+	if not sm.isHost then
+		sm.hideandseek.seekers = args
+	end
 end
 
 function Game.client_badCode2( self, args )
-	sm.hideandseek.score = args
+	if not sm.isHost then
+		sm.hideandseek.score = args
+	end
+end
+
+function Game.client_badCode3( self, args )
+	if not sm.isHost then
+		G_ChallengeStartTick = args
+	end
 end
 
 function Game.server_fly( self, params, player )

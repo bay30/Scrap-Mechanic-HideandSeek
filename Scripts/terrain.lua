@@ -229,7 +229,7 @@ function GetHarvestablesForCell( cellX, cellY, lod )
 	end
 	if tiles and cellX == 0 and cellY == 0 then
 		for sUid,_ in pairs( tiles ) do
-			local tileharvestables = sm.terrainTile.getHarvestablesForCell( sm.uuid.new( sUid ), 0, 0 )
+			local tileharvestables = sm.terrainTile.getHarvestablesForCell( sm.uuid.new( sUid ), 0, 0, lod )
 			for _,c in ipairs( tileharvestables ) do
 				harvestables[#harvestables + 1] = c
 			end
