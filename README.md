@@ -2,7 +2,7 @@
 ###### Gamemode designed to be played with friends
 
 Hide and seek with automatic tagging on melee or projectile
-With distance written into nametags and super customize maps with tiles and worlds (if you do some modding to write tiles & worlds)
+with distance written into nametags and super customize maps with tiles and worlds (if you do some modding to write tiles & worlds)
 
 ## How do i play?
 Lanuch the gamemode and load in a creation, if the creation is made for the gamemode a menu will popup, otherwise go into mod parts and place a publishblock,
