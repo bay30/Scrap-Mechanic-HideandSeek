@@ -206,7 +206,7 @@ function Game.server_load( self, args )
 			if sm.hideandseek.settings.Seekers and #sm.hideandseek.settings.Seekers <= #Selection then
 				Seekers = sm.hideandseek.settings.Seekers
 			end
-			print(Selection,self:server_getTableLength(sm.hideandseek.selectedseekers))
+			
 			if Seekers < #Selection-self:server_getTableLength(sm.hideandseek.selectedseekers) then
 				for key,plr in pairs(Selection) do
 					if sm.hideandseek.selectedseekers[plr.id] then
@@ -215,7 +215,7 @@ function Game.server_load( self, args )
 				end
 			end
 			sm.hideandseek.selectedseekers = {}
-			print(Selection)
+			
 			for i = 1, Seekers do
 				local Number = math.random(1,#Selection)
 				local Selected = Selection[Number]
@@ -236,6 +236,7 @@ function Game.server_load( self, args )
 		if sm.hideandseek.settings.Spudgun then
 			table.insert(Array,"041d874e-46b3-49ec-8b26-e3db9770c6fd")
 		end
+		print(sm.hideandseek.settings)
 		for _,plr in pairs(sm.player.getAllPlayers()) do 
 			local inventoryContainer = plr:getInventory()
 			sm.container.beginTransaction()
@@ -477,6 +478,7 @@ function Game.client_buttonGui(self,btn)
 	elseif btn == "Stop game" then
 		self.network:sendToServer("server_setWorld","build")
 	end
+	self.cl.gui["settings"]["gui"]:close()
 end
 
 function Game.client_createSettings( self, args )
