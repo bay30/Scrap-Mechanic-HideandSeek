@@ -5,10 +5,15 @@ dofile( "$SURVIVAL_DATA/Scripts/game/survival_projectiles.lua" )
 dofile( "$SURVIVAL_DATA/Scripts/game/survival_meleeattacks.lua" )
 dofile( "$SURVIVAL_DATA/Scripts/game/managers/EffectManager.lua" )
 dofile( "$SURVIVAL_DATA/Scripts/game/managers/UnitManager.lua" )
+
+---@class Game : GameClass
+---@field sv table
+---@field cl table
+
 Game = class( nil )
 Game.enableRestrictions = true
 
-function Game.createCharacterOnSpawner( self, player, playerSpawners, defaultPosition )
+function Game:createCharacterOnSpawner( player, playerSpawners, defaultPosition )
 	local spawnPosition = defaultPosition
 	local yaw = 0
 	local pitch = 0
@@ -35,37 +40,50 @@ function Game.server_onCreate( self )
 		self.sv.saved.buildWorld = sm.world.createWorld( "$CONTENT_DATA/Scripts/World.lua", "World", {tiles={"$CONTENT_DATA/Terrain/Tiles/ChallengeBuilderDefault.tile","$CONTENT_DATA/Terrain/Tiles/challengebuilder_env_DT.tile"}} )
 		self.storage:save( self.sv.saved )
 	end
-	G_ChallengeStarted = false
-	G_ChallengeStartTick = 0
-	sm.challenge.hasStarted = function()
-		return G_ChallengeStarted
-	end
-	sm.challenge.start = function()
-		if not G_ChallengeStarted then
-			for key,plr in pairs(sm.player.getAllPlayers()) do
-				sm.hideandseek.score[plr.id] = {plr=plr,tags=0}
-			end
-			G_ChallengeStarted = true
-			G_ChallengeStartTick = os.time()
-			self.network:sendToClients("client_badCode3",G_ChallengeStartTick)
-		end
-	end
-	sm.challenge.stop = function()
-		if G_ChallengeStarted then
-			G_ChallengeStarted = false
-		end
-	end
-	sm.hideandseek = {}
-	sm.hideandseek.settings = {}
-	sm.hideandseek.score = {}
-	sm.hideandseek.seekers = {}
-	sm.hideandseek.selectedseekers = {}
+	self.sv.G_ChallengeStarted = false
+	self.sv.G_ChallengeStartTick = 0
+	self.sv.settings = {}
+	self.sv.score = {}
+	self.sv.seekers = {}
+	self.sv.selectedseekers = {}
 	self.sv.objectlist = {}
 	self.sv.activeWorld = self.sv.saved.buildWorld
 	self.sv.countdownStarted = false
 	self.sv.gameRunning = true
 	self.sv.countdownTime = 0
 	sm.game.bindChatCommand("/return",{},"server_onCommand","Returns everyone to the build world.")
+
+end
+
+function Game:sv_hasStarted()
+	return self.sv.G_ChallengeStarted
+end
+
+function Game:cl_hasStarted()
+	return self.cl.G_ChallengeStarted
+end
+
+function Game:sv_start()
+	if not self.sv.G_ChallengeStarted then
+
+		for key,plr in pairs(sm.player.getAllPlayers()) do
+			self.sv.score[plr.id] = {plr=plr,tags=0}
+		end
+		self.network:setClientData({Variable="score",Value=self.sv.score})
+
+		self.sv.G_ChallengeStarted = true
+		self.sv.G_ChallengeStartTick = os.time()
+		self.network:setClientData( {Variable="G_ChallengeStartTick",Value=self.sv.G_ChallengeStartTick} )
+		self.network:setClientData( {Variable="G_ChallengeStarted",Value=self.sv.G_ChallengeStarted} )
+
+	end
+end
+
+function Game:sv_stop()
+	if self.sv.G_ChallengeStarted then
+		self.sv.G_ChallengeStarted = false
+		self.network:setClientData( {Variable="G_ChallengeStarted",Value=self.sv.G_ChallengeStarted} )
+	end
 end
 
 function Game.server_onRefresh(self)
@@ -76,8 +94,8 @@ function Game.server_onFixedUpdate( self, delta )
 	g_unitManager:sv_onFixedUpdate()
 	if not self.sv.gameRunning then return end
 	local Hiders = 0
-	for key,info in pairs(sm.hideandseek.score) do
-		if sm.hideandseek.seekers[key] == nil then
+	for key,info in pairs(self.sv.score) do
+		if self.sv.seekers[key] == nil then
 			Hiders = Hiders + 1
 		end
 	end
@@ -86,17 +104,17 @@ function Game.server_onFixedUpdate( self, delta )
 			if sm.exists(obj) then
 				if obj.interactable.active and not self.sv.countdownStarted then
 					self.sv.countdownStarted = true
-					self.sv.countdownTime = tonumber(sm.hideandseek.settings.HideTime) or 60
-					
+					self.sv.countdownTime = tonumber(self.sv.settings.HideTime) or 60
+
 					for key,plr in pairs(sm.player.getAllPlayers()) do
 						if plr.character then
-							if sm.hideandseek.seekers[plr.id] == nil then
+							if self.sv.seekers[plr.id] == nil then
 								sm.event.sendToWorld(self.sv.activeWorld,"createCharacterOnSpawner",{players={plr},uuid="b5858089-b1f8-4d13-a485-fdcb204d9c6b"})
 							end
 						end
 					end
 					
-					sm.event.sendToWorld(self.sv.activeWorld,"destructive",sm.hideandseek.settings.Destruction)
+					sm.event.sendToWorld(self.sv.activeWorld,"destructive",self.sv.settings.Destruction)
 					
 				end
 			end
@@ -109,21 +127,21 @@ function Game.server_onFixedUpdate( self, delta )
 			local minutes = seconds/60
 			local hours = minutes/60
 			self.network:sendToClients("client_displayAlert",string.format( "%02i:%02i:%02i", hours%60, minutes%60, seconds%60 ))
-		elseif self.sv.countdownStarted and not sm.challenge.hasStarted() then
-			sm.challenge.start()
+		elseif self.sv.countdownStarted and not self:sv_hasStarted() then
+			self:sv_start()
 			self.sv.countdownTime = self.sv.countdownTime - delta
 			self.network:sendToClients("client_displayAlert","Seekers have been released")
 			local FilteredPlayers = {}
 			for _,plr in pairs(sm.player.getAllPlayers()) do
-				if sm.hideandseek.seekers[plr.id] then
+				if self.sv.seekers[plr.id] then
 					table.insert(FilteredPlayers,plr)
 				end
 			end
 			sm.event.sendToWorld(self.sv.activeWorld,"createCharacterOnSpawner",{players=FilteredPlayers,uuid="b5858089-d1f8-4d13-a485-fdcb204d9c6b"})
 		end
 	end
-	if sm.challenge.hasStarted() and sm.hideandseek.settings.GameTime and sm.hideandseek.settings.GameTime ~= 0 then
-		local seconds = (G_ChallengeStartTick+sm.hideandseek.settings.GameTime)-os.time()
+	if self:sv_hasStarted() and self.sv.settings.GameTime and self.sv.settings.GameTime ~= 0 then
+		local seconds = (self.sv.G_ChallengeStartTick+self.sv.settings.GameTime)-os.time()
 		local minutes = seconds/60
 		local hours = minutes/60
 		self.network:sendToClients("client_displayTimer",string.format( "%02i:%02i:%02i", hours%60, minutes%60, seconds%60 ))
@@ -133,7 +151,7 @@ function Game.server_onFixedUpdate( self, delta )
 			self.network:sendToClients("client_displayAlert","Game over!")
 			sm.event.sendToWorld(self.sv.activeWorld,"server_celebrate")
 		end
-	elseif sm.challenge.hasStarted() and Hiders < 1 then
+	elseif self:sv_hasStarted() and Hiders < 1 then
 		self.sv.gameRunning = false
 		self.network:sendToClients("client_displayTimer","00:00:00")
 		self.network:sendToClients("client_displayAlert","Game over!")
@@ -143,28 +161,30 @@ end
 
 function Game.server_onTag( self, args )
 	if args["tagger"] and args["tagged"] and self.sv.activeWorld ~= self.sv.saved.buildWorld and self.sv.gameRunning then
-		if sm.hideandseek.seekers[args["tagger"].id] and sm.challenge.hasStarted() then
-			if not sm.hideandseek.seekers[args["tagged"].id] and sm.hideandseek.seekers[args["tagger"].id]["seeker"] then
-				if sm.hideandseek.BecomeSeekers then
-					sm.hideandseek.seekers[args["tagged"].id] = {args["tagged"],seeker=true}
+		if self.sv.seekers[args["tagger"].id] and self:sv_hasStarted() then
+			if not self.sv.seekers[args["tagged"].id] and self.sv.seekers[args["tagger"].id]["seeker"] then
+				if self.sv.BecomeSeekers then
+					self.sv.seekers[args["tagged"].id] = {args["tagged"],seeker=true}
 				else
-					sm.hideandseek.seekers[args["tagged"].id] = {args["tagged"],seeker=false}
+					self.sv.seekers[args["tagged"].id] = {args["tagged"],seeker=false}
 				end
-				self.network:sendToClients("client_badCode",sm.hideandseek.seekers)
-				sm.hideandseek.score[args["tagger"].id].tags = sm.hideandseek.score[args["tagger"].id].tags + 1
-				sm.hideandseek.score[args["tagged"].id].hidetime = os.time()
-				self.network:sendToClients("client_badCode2",sm.hideandseek.score)
+				self.network:setClientData({Variable="seekers",Value=self.sv.seekers})
+				self.sv.score[args["tagger"].id].tags = self.sv.score[args["tagger"].id].tags + 1
+				self.sv.score[args["tagged"].id].hidetime = os.time()
+				self.network:setClientData({Variable="score",Value=self.sv.score})
 				sm.event.sendToWorld(self.sv.activeWorld,"server_effect",{name="Woc - Destruct",pos=sm.player.getAllPlayers()[1].character.worldPosition})
 			end
-		elseif args["tagger"].id == 1 and sm.hideandseek.settings.PickSeekers and not sm.challenge.hasStarted() and not self.sv.countdownStarted then
-			if sm.hideandseek.seekers[args["tagged"].id] then
-				sm.hideandseek.seekers[args["tagged"].id] = nil
-				sm.hideandseek.score[args["tagged"].id].hidetime = nil
-				self.network:sendToClients("client_badCode",sm.hideandseek.seekers)
+		elseif args["tagger"].id == 1 and self.sv.settings.PickSeekers and not self:sv_hasStarted() and not self.sv.countdownStarted then
+			if self.sv.seekers[args["tagged"].id] then
+				self.sv.seekers[args["tagged"].id] = nil
+				self.sv.score[args["tagged"].id].hidetime = nil
+				self.network:setClientData({Variable="seekers",Value=self.sv.seekers})
+				self.network:setClientData({Variable="score",Value=self.sv.score})
 			else
-				sm.hideandseek.seekers[args["tagged"].id] = {args["tagged"],seeker=true}
-				sm.hideandseek.score[args["tagged"].id].hidetime = nil
-				self.network:sendToClients("client_badCode",sm.hideandseek.seekers)
+				self.sv.seekers[args["tagged"].id] = {args["tagged"],seeker=true}
+				self.sv.score[args["tagged"].id].hidetime = nil
+				self.network:setClientData({Variable="seekers",Value=self.sv.seekers})
+				self.network:setClientData({Variable="score",Value=self.sv.score})
 			end
 		end
 	end
@@ -177,10 +197,14 @@ function Game.server_onTaunt( self, args, player )
 end
 
 function Game.server_setValues( self, args )
-	sm.hideandseek.settings = args.settings or {}
-	sm.hideandseek.tiles = args.tiles or {}
-	sm.hideandseek.world = args.world or ""
-	sm.hideandseek.blueprints = args.blueprints or {}
+	self.sv.settings = args[1].settings or {}
+	self.sv.tiles = args[1].tiles or {}
+	self.sv.world = args[1].world or ""
+	self.sv.blueprints = args[1].blueprints or {}
+	self.network:setClientData({Variable="settings",Value=self.sv.settings})
+	if args[2] then
+		self.network:sendToClient(args[3],"client_createSettings", { isBlock = true, open = true, play = true, explore = true })
+	end
 end
 
 function Game.server_getTableLength( self, tab )
@@ -195,48 +219,48 @@ function Game.server_load( self, args )
 
 	if args == false then
 
-		sm.game.setLimitedInventory(not sm.hideandseek.settings.Limited)
+		sm.game.setLimitedInventory(not self.sv.settings.Limited)
 		self.sv.countdownStarted = false
 	
 		-- Seekers --
 	
-		if sm.hideandseek.settings.PickSeekers == nil or sm.hideandseek.settings.PickSeekers == false then
+		if self.sv.settings.PickSeekers == nil or self.sv.settings.PickSeekers == false then
 			local Selection = sm.player.getAllPlayers()
 			local Seekers = 1
-			if sm.hideandseek.settings.Seekers and #sm.hideandseek.settings.Seekers <= #Selection then
-				Seekers = sm.hideandseek.settings.Seekers
+			if self.sv.settings.Seekers and #self.sv.settings.Seekers <= #Selection then
+				Seekers = self.sv.settings.Seekers
 			end
 			
-			if Seekers < #Selection-self:server_getTableLength(sm.hideandseek.selectedseekers) then
+			if Seekers < #Selection-self:server_getTableLength(self.sv.selectedseekers) then
 				for key,plr in pairs(Selection) do
-					if sm.hideandseek.selectedseekers[plr.id] then
+					if self.sv.selectedseekers[plr.id] then
 						table.remove(Selection,key)
 					end
 				end
 			end
-			sm.hideandseek.selectedseekers = {}
+			self.sv.selectedseekers = {}
 			
 			for i = 1, Seekers do
 				local Number = math.random(1,#Selection)
 				local Selected = Selection[Number]
-				sm.hideandseek.selectedseekers[Selected.id] = Number
-				sm.hideandseek.seekers[Selected.id] = {Selected,seeker=true}
+				self.sv.selectedseekers[Selected.id] = Number
+				self.sv.seekers[Selected.id] = {Selected,seeker=true}
 				table.remove(Selection,Number)
 			end
-			self.network:sendToClients("client_badCode",sm.hideandseek.seekers)
+			self.network:setClientData({Variable="seekers",Value=self.sv.seekers})
 		end
 	
 		-- Seekers --
 	
 		-- Inv --
 		local Array = {}
-		if sm.hideandseek.settings.Hammer then
+		if self.sv.settings.Hammer then
 			table.insert(Array,"09845ac0-4785-4ce8-98b3-0aa4a88c4bdd")
 		end
-		if sm.hideandseek.settings.Spudgun then
+		if self.sv.settings.Spudgun then
 			table.insert(Array,"041d874e-46b3-49ec-8b26-e3db9770c6fd")
 		end
-		print(sm.hideandseek.settings)
+		print(self.sv.settings)
 		for _,plr in pairs(sm.player.getAllPlayers()) do 
 			local inventoryContainer = plr:getInventory()
 			sm.container.beginTransaction()
@@ -253,15 +277,15 @@ function Game.server_load( self, args )
 	
 	self:server_setWorld("play")
 	
-	sm.hideandseek.SpawnerList = {}
-	for key,creation in pairs(sm.hideandseek.blueprints or {}) do
+	self.sv.SpawnerList = {}
+	for key,creation in pairs(self.sv.blueprints or {}) do
 		local creation = sm.creation.importFromString( self.sv.activeWorld, creation, sm.vec3.zero(), sm.quat.identity(), true )
 		for _,body in ipairs(creation) do
-			body.erasable = Edited
-			body.buildable = Edited
-			body.usable = Edited
-			body.liftable = Edited
-			body.destructable = Edited
+			body.erasable = false
+			body.buildable = false
+			body.usable = false
+			body.liftable = false
+			body.destructable = self.sv.settings.destructable
 			for key,shape in pairs(body:getShapes()) do
 				if shape.uuid == sm.uuid.new("4a9929e9-aa85-4791-89c2-f8799920793f") then
 					if not self.sv.objectlist.starters then
@@ -269,7 +293,7 @@ function Game.server_load( self, args )
 					end
 					table.insert(self.sv.objectlist.starters,shape)
 				elseif shape.uuid == sm.uuid.new("b5858089-b1f8-4d13-a485-fdaa204d9c6b") then
-					table.insert(sm.hideandseek.SpawnerList,{pos=shape.worldPosition,at=shape:getAt(),up=shape:getUp()})
+					table.insert(self.sv.SpawnerList,{pos=shape.worldPosition,at=shape:getAt(),up=shape:getUp()})
 				end
 			end
 		end
@@ -280,7 +304,7 @@ function Game.server_load( self, args )
 	end
 	
 	if args ~= false then
-		sm.challenge.start()
+		self:sv_start()
 		self.sv.gameRunning = false
 	end
 	
@@ -294,9 +318,9 @@ end
 
 function Game.server_setWorld( self, args )
 	if args == "build" then
-		sm.hideandseek.seekers = {}
-		self.network:sendToClients("client_badCode",sm.hideandseek.seekers)
-		sm.challenge.stop()
+		self.sv.seekers = {}
+		self.network:setClientData({Variable="seekers",Value=self.sv.seekers})
+		self:sv_stop()
 		sm.game.setLimitedInventory(false)
 		self.sv.gameRunning = false
 		self.network:sendToClients("client_displayTimer","00:00:00")
@@ -309,13 +333,13 @@ function Game.server_setWorld( self, args )
 			self.sv.activeWorld:loadCell( 0, 0, plr, "sv_createPlayerCharacter" )
 		end
 	elseif args == "play" then
-		sm.challenge.stop()
+		self:sv_stop()
 		self.sv.gameRunning = true
 		if self.sv.activeWorld ~= self.sv.saved.buildWorld then
 			self.sv.objectlist = {}
 			self.sv.activeWorld:destroy()
 		end
-		self.sv.activeWorld = sm.world.createWorld( "$CONTENT_DATA/Scripts/World.lua", "World", { world=sm.hideandseek.world, tiles=sm.hideandseek.tiles, play=true } )
+		self.sv.activeWorld = sm.world.createWorld( "$CONTENT_DATA/Scripts/World.lua", "World", { world=self.sv.world, tiles=self.sv.tiles, play=true } )
 	end
 end
 
@@ -330,31 +354,32 @@ function Game.server_onPlayerJoined( self, player, isNewPlayer )
 		sm.gui.chatMessage("[------------------------]\nWelcome to hide & seek gamemode!\nCommands:\n/fly\n/return\n/score\n/settings")
 	end
 	
-	sm.hideandseek.score[player.id] = {plr=player,tags=0,hidetime=(G_ChallengeStartTick or 0)}
+	self.sv.score[player.id] = {plr=player,tags=0,hidetime=(self.sv.G_ChallengeStartTick or 0)}
 
-	if sm.challenge.hasStarted() then
-		if sm.hideandseek.BecomeSeekers then
-			sm.hideandseek.seekers[args["tagged"].id] = {args["tagged"],seeker=true}
+	if self:sv_hasStarted() then
+		if self.sv.BecomeSeekers then
+			self.sv.seekers[player.id] = {player,seeker=true}
 		else
-			sm.hideandseek.seekers[args["tagged"].id] = {args["tagged"],seeker=false}
+			self.sv.seekers[player.id] = {player,seeker=false}
 		end
-		self.network:sendToClients("client_badCode",sm.hideandseek.seekers)
+		self.network:setClientData({Variable="seekers",Value=self.sv.seekers})
 		sm.event.sendToWorld(self.sv.activeWorld,"createCharacterOnSpawner",{players={player},uuid="b5858089-d1f8-4d13-a485-fdcb204d9c6b"})
 	else
 		self.sv.activeWorld:loadCell( 0, 0, player, "sv_createPlayerCharacter" )
 	end
-	self.network:sendToClients("client_badCode2",sm.hideandseek.score)
-	self.network:sendToClients("client_badCode3",G_ChallengeStartTick)
+	self.network:setClientData({Variable="score",Value=self.sv.score})
+	self.network:setClientData({Variable="G_ChallengeStartTick",Value=self.sv.G_ChallengeStartTick})
 	
 end
 
 function Game.server_onPlayerLeft( self, player )
-	sm.hideandseek.score[player.id] = nil
+	self.sv.score[player.id] = nil
+	self.network:setClientData({Variable="score",Value=self.sv.score})
 end
 
 function Game.sv_createPlayerCharacter( self, world, x, y, player, params )
-	local pos,pitch,yaw = self:createCharacterOnSpawner(player,sm.hideandseek.SpawnerList or {},sm.vec3.new( 2, 2, 20 ))
-    local character = sm.character.createCharacter( player, world, pos,pitch,yaw )
+	local pos,pitch,yaw = self:createCharacterOnSpawner(player,self.sv.SpawnerList or {},sm.vec3.new( 2, 2, 20 ))
+    local character = sm.character.createCharacter( player, world, pos, pitch,yaw )
 	player:setCharacter( character )
 end
 
@@ -369,7 +394,7 @@ function Game.client_displayAlert( self, text )
 end
 
 function Game.client_displayTimer( self, text )
-	if sm.challenge.hasStarted() and self.sv.gameRunning then
+	if self:cl_hasStarted() and self.sv.gameRunning then
 		self.cl.gui["timer"]:setVisible("Time",true)
 		self.cl.gui["timer"]:setText("Time", text)
 	else
@@ -377,18 +402,23 @@ function Game.client_displayTimer( self, text )
 	end
 end
 
+function Game:client_onRefresh()
+	print(self.cl.G_ChallengeStarted)
+end
+
 function Game.client_onCreate( self )
 	
+	self.cl = {}
+
+	self.cl.G_ChallengeStarted = false
+	self.cl.G_ChallengeStartTick = 0
+	self.cl.settings = {}
+	self.cl.score = {}
+	self.cl.seekers = {}
+	self.cl.selectedseekers = {}
+
 	sm.challenge.hasStarted = function()
-		return G_ChallengeStarted
-	end
-	
-	if not sm.isHost then
-		sm.hideandseek = {}
-		sm.hideandseek.seekers = {}
-		if not G_ChallengeStartTick then
-			G_ChallengeStartTick = 0
-		end
+		return self.cl.G_ChallengeStarted
 	end
 
 	if g_unitManager == nil then
@@ -406,7 +436,6 @@ function Game.client_onCreate( self )
 		sm.game.bindChatCommand("/settings",{},"client_onCommand","Opens the settings menu.")
 	end
 	
-	self.cl = {}
 	self.cl.gui = {}
 	
 	self.cl.gui["timer"] = sm.gui.createChallengeHUDGui()
@@ -429,12 +458,12 @@ end
 function Game.client_onFixedUpdate( self )
 	if self.cl.gui["score"] and self.cl.gui["score"]["gui"] and sm.exists(self.cl.gui["score"]["gui"]) then
 		for i = 1, 8 do
-			local plr,score = getTablePosition(sm.hideandseek.score,i)
+			local plr,score = getTablePosition(self.cl.score,i)
 			if plr and score then
 				self.cl.gui.score.gui:setText("Player"..i,tostring(score.plr:getName()))
 				self.cl.gui.score.gui:setText("TextScore"..i,tostring(score.tags))
 				
-				local seconds = ( score.hidetime or os.time() ) - G_ChallengeStartTick
+				local seconds = ( score.hidetime or os.time() ) - self.cl.G_ChallengeStartTick
 				local minutes = seconds/ 60 % 60
 				local hours = minutes/ 60 % 60
 				
@@ -448,17 +477,17 @@ function Game.client_onFixedUpdate( self )
 	end
 	local Player = sm.localPlayer.getPlayer()
 	local AmSeeker = false
-	if sm.hideandseek.seekers and sm.hideandseek.seekers[Player.id] and sm.hideandseek.seekers[Player.id]["seeker"] then
+	if self.cl.seekers and self.cl.seekers[Player.id] and self.cl.seekers[Player.id]["seeker"] then
 		AmSeeker = true
 	end
 	if Player and Player.character then
 		for key,plr in pairs(sm.player.getAllPlayers()) do
 			if plr.character then
-				if not AmSeeker or sm.hideandseek.seekers[plr.id] then
+				if not AmSeeker or self.cl.seekers[plr.id] then
 					local Distance = math.floor((plr.character:getWorldPosition()-Player.character:getWorldPosition()):length2()/4)
 					local Color = sm.color.new(1,1,1)
-					if sm.hideandseek.seekers[plr.id] then
-						if sm.hideandseek.seekers[plr.id]["seeker"] then
+					if self.cl.seekers[plr.id] then
+						if self.cl.seekers[plr.id]["seeker"] then
 							Color = sm.color.new(1,0.294,0.294)
 						else
 							Color = sm.color.new(0.294,0.294,1)
@@ -497,14 +526,14 @@ function Game.client_createSettings( self, args )
 	Gui["gui"]:setTextChangedCallback("GameTime","client_settingsUpdate")
 	Gui["gui"]:setTextChangedCallback("HideTime","client_settingsUpdate")
 	Gui["gui"]:setTextChangedCallback("Seekers","client_settingsUpdate")
-	Gui["gui"]:setText("GameTime",sm.hideandseek.settings.GameTime or "0")
-	Gui["gui"]:setText("HideTime",sm.hideandseek.settings.HideTime or "60")
-	Gui["gui"]:setText("Seekers",sm.hideandseek.settings.Seekers or "1")
+	Gui["gui"]:setText("HideTime",self.cl.settings.HideTime or "60")
+	Gui["gui"]:setText("GameTime",self.cl.settings.GameTime or "0")
+	Gui["gui"]:setText("Seekers",self.cl.settings.Seekers or "1")
 	local buttons = {"BecomeSeekers","PickSeekers","Limited","Destruction","Hammer","Spudgun"}
 	for _,obj in pairs(buttons) do
 		Gui["gui"]:setButtonCallback(obj.."Y","client_settingsUpdate2")
 		Gui["gui"]:setButtonCallback(obj.."N","client_settingsUpdate2")
-		local state = sm.hideandseek.settings[obj] or false
+		local state = self.cl.settings[obj] or false
 		Gui["gui"]:setButtonState(obj.."Y",state)
 		Gui["gui"]:setButtonState(obj.."N",not state)
 	end
@@ -523,10 +552,17 @@ function Game.client_createSettings( self, args )
 end
 
 function Game.server_updateSettings(self,args)
-	sm.hideandseek.settings[args["editbox"]] = args["value"]
+	self.sv.settings[args["editbox"]] = args["value"]
 	if self.sv.activeWorld ~= self.sv.saved.buildWorld then
-		sm.game.setLimitedInventory(not sm.hideandseek.settings.Limited)
+		sm.game.setLimitedInventory(not self.sv.settings.Limited)
 	end
+	if Main and Main.one and sm.exists(Main.one) then
+		local interactable = Main.one:getInteractable()
+		if interactable and sm.exists(interactable) then
+			sm.event.sendToInteractable(interactable,"server_setSettings",self.sv.settings)
+		end
+	end
+	self.network:setClientData({Variable="settings",Value=self.sv.settings})
 end
 
 function Game.client_settingsUpdate( self, editbox, text )	
@@ -573,20 +609,29 @@ function Game.client_createEffect( self, args )
 end
 
 function Game.client_badCode( self, args )
+	print("Replace this1")
 	if not sm.isHost then
-		sm.hideandseek.seekers = args
+		self.cl.seekers = args
 	end
 end
 
 function Game.client_badCode2( self, args )
+	print("Replace this2")
 	if not sm.isHost then
-		sm.hideandseek.score = args
+		self.cl.score = args
 	end
 end
 
 function Game.client_badCode3( self, args )
+	print("Replace this3")
 	if not sm.isHost then
-		G_ChallengeStartTick = args
+		self.cl.G_ChallengeStartTick = args
+	end
+end
+
+function Game:client_onClientDataUpdate( data, channel )
+	if data["Variable"] ~= nil and data["Value"] ~= nil then
+		self.cl[data["Variable"]] = data["Value"]
 	end
 end
 

@@ -4,6 +4,8 @@ dofile("$CHALLENGE_DATA/Scripts/game/challenge_shapes.lua")
 dofile("$CHALLENGE_DATA/Scripts/game/challenge_tools.lua")
 dofile("$SURVIVAL_DATA/Scripts/game/managers/WaterManager.lua")
 
+---@class ChallengeBaseWorld : WorldClass
+
 World = class(ChallengeBaseWorld)
 World.terrainScript = "$CONTENT_DATA/Scripts/terrain.lua"
 World.cellMinX = -6
@@ -104,7 +106,7 @@ function World.server_onMelee(self, position, attacker, target, damage, power, d
 			end
 		end
 	end
-	if target and sm.exists(target) and not target.destructable then
+	if target and sm.exists(target) and type(target) == "Shape" and not target.destructable then
 		local rot = sm.vec3.getRotation(sm.vec3.new(1, 0, 0), normal) * sm.quat.fromEuler(sm.vec3.new(0, 0, 90))
 		self.network:sendToClients("client_createEffect", {
 			name = "Barrier - ShieldImpact",
