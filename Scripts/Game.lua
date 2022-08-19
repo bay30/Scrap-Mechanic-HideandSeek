@@ -45,7 +45,7 @@ function Game.server_onCreate( self )
 	self.sv.settings = {}
 	self.sv.score = {}
 	self.sv.seekers = {}
-	self.sv.selectedseekers = {}
+	self.sv.seekerqueue = {}
 	self.sv.objectlist = {}
 	self.sv.activeWorld = self.sv.saved.buildWorld
 	self.sv.countdownStarted = false
@@ -68,6 +68,9 @@ function Game:sv_start()
 
 		for key,plr in pairs(sm.player.getAllPlayers()) do
 			self.sv.score[plr.id] = {plr=plr,tags=0}
+			if self.sv.seekers[plr.id] then
+				self.sv.score[plr.id].hidetime = os.time()
+			end
 		end
 		self.network:setClientData({Variable="score",Value=self.sv.score})
 
@@ -168,23 +171,20 @@ function Game.server_onTag( self, args )
 				else
 					self.sv.seekers[args["tagged"].id] = {args["tagged"],seeker=false}
 				end
-				self.network:setClientData({Variable="seekers",Value=self.sv.seekers})
 				self.sv.score[args["tagger"].id].tags = self.sv.score[args["tagger"].id].tags + 1
 				self.sv.score[args["tagged"].id].hidetime = os.time()
-				self.network:setClientData({Variable="score",Value=self.sv.score})
+				self.network:setClientData({ {Variable="seekers",Value=self.sv.seekers}, {Variable="score",Value=self.sv.score} })
 				sm.event.sendToWorld(self.sv.activeWorld,"server_effect",{name="Woc - Destruct",pos=sm.player.getAllPlayers()[1].character.worldPosition})
 			end
 		elseif args["tagger"].id == 1 and self.sv.settings.PickSeekers and not self:sv_hasStarted() and not self.sv.countdownStarted then
 			if self.sv.seekers[args["tagged"].id] then
 				self.sv.seekers[args["tagged"].id] = nil
 				self.sv.score[args["tagged"].id].hidetime = nil
-				self.network:setClientData({Variable="seekers",Value=self.sv.seekers})
-				self.network:setClientData({Variable="score",Value=self.sv.score})
+				self.network:setClientData({ {Variable="seekers",Value=self.sv.seekers}, {Variable="score",Value=self.sv.score} })
 			else
 				self.sv.seekers[args["tagged"].id] = {args["tagged"],seeker=true}
 				self.sv.score[args["tagged"].id].hidetime = nil
-				self.network:setClientData({Variable="seekers",Value=self.sv.seekers})
-				self.network:setClientData({Variable="score",Value=self.sv.score})
+				self.network:setClientData({ {Variable="seekers",Value=self.sv.seekers}, {Variable="score",Value=self.sv.score} })
 			end
 		end
 	end
@@ -231,21 +231,11 @@ function Game.server_load( self, args )
 				Seekers = self.sv.settings.Seekers
 			end
 			
-			if Seekers < #Selection-self:server_getTableLength(self.sv.selectedseekers) then
-				for key,plr in pairs(Selection) do
-					if self.sv.selectedseekers[plr.id] then
-						table.remove(Selection,key)
-					end
-				end
-			end
-			self.sv.selectedseekers = {}
-			
 			for i = 1, Seekers do
-				local Number = math.random(1,#Selection)
-				local Selected = Selection[Number]
-				self.sv.selectedseekers[Selected.id] = Number
-				self.sv.seekers[Selected.id] = {Selected,seeker=true}
-				table.remove(Selection,Number)
+				local plr = self.sv.seekerqueue[1]
+				self.sv.seekers[plr.id] = {plr,seeker=true}
+				table.insert(self.sv.seekerqueue,plr)
+				table.remove(self.sv.seekerqueue,1)
 			end
 			self.network:setClientData({Variable="seekers",Value=self.sv.seekers})
 		end
@@ -260,7 +250,7 @@ function Game.server_load( self, args )
 		if self.sv.settings.Spudgun then
 			table.insert(Array,"041d874e-46b3-49ec-8b26-e3db9770c6fd")
 		end
-		print(self.sv.settings)
+
 		for _,plr in pairs(sm.player.getAllPlayers()) do 
 			local inventoryContainer = plr:getInventory()
 			sm.container.beginTransaction()
@@ -367,13 +357,16 @@ function Game.server_onPlayerJoined( self, player, isNewPlayer )
 	else
 		self.sv.activeWorld:loadCell( 0, 0, player, "sv_createPlayerCharacter" )
 	end
-	self.network:setClientData({Variable="score",Value=self.sv.score})
-	self.network:setClientData({Variable="G_ChallengeStartTick",Value=self.sv.G_ChallengeStartTick})
+
+	table.insert(self.sv.seekerqueue,math.random(1,#self.sv.seekerqueue),player)
+
+	self.network:setClientData({ {Variable="G_ChallengeStartTick",Value=self.sv.G_ChallengeStartTick}, {Variable="score",Value=self.sv.score} })
 	
 end
 
 function Game.server_onPlayerLeft( self, player )
 	self.sv.score[player.id] = nil
+	table.remove(self.sv.seekerqueue,table.find(self.sv.seekerqueue,player))
 	self.network:setClientData({Variable="score",Value=self.sv.score})
 end
 
@@ -460,7 +453,12 @@ function Game.client_onFixedUpdate( self )
 		for i = 1, 8 do
 			local plr,score = getTablePosition(self.cl.score,i)
 			if plr and score then
-				self.cl.gui.score.gui:setText("Player"..i,tostring(score.plr:getName()))
+				local NameColor = ""
+				if self.cl.seekers[score.plr.id] then
+					NameColor = self.cl.seekers[score.plr.id].seeker and "#ff4949" or "#4949ff"
+				end
+
+				self.cl.gui.score.gui:setText("Player"..i,NameColor..tostring(score.plr:getName()))
 				self.cl.gui.score.gui:setText("TextScore"..i,tostring(score.tags))
 				
 				local seconds = ( score.hidetime or os.time() ) - self.cl.G_ChallengeStartTick
@@ -482,7 +480,7 @@ function Game.client_onFixedUpdate( self )
 	end
 	if Player and Player.character then
 		for key,plr in pairs(sm.player.getAllPlayers()) do
-			if plr.character then
+			if plr.character and plr ~= sm.localPlayer.getPlayer() then
 				if not AmSeeker or self.cl.seekers[plr.id] then
 					local Distance = math.floor((plr.character:getWorldPosition()-Player.character:getWorldPosition()):length2()/4)
 					local Color = sm.color.new(1,1,1)
@@ -632,6 +630,10 @@ end
 function Game:client_onClientDataUpdate( data, channel )
 	if data["Variable"] ~= nil and data["Value"] ~= nil then
 		self.cl[data["Variable"]] = data["Value"]
+	elseif type(data) == "table" and #data > 0 then
+		for i,v in ipairs(data) do
+			self.cl[v["Variable"]] = v["Value"]
+		end
 	end
 end
 
