@@ -69,7 +69,7 @@ function Game.server_onCreate( self )
 end
 
 function Game.server_onRefresh(self)
-	self:server_onTag({tagger=sm.player.getAllPlayers()[1],tagged=sm.player.getAllPlayers()[1]})
+	--self:server_onTag({tagger=sm.player.getAllPlayers()[1],tagged=sm.player.getAllPlayers()[1]})
 end
 
 function Game.server_onFixedUpdate( self, delta )
@@ -147,14 +147,14 @@ function Game.server_onTag( self, args )
 			if not sm.hideandseek.seekers[args["tagged"].id] and sm.hideandseek.seekers[args["tagger"].id]["seeker"] then
 				if sm.hideandseek.BecomeSeekers then
 					sm.hideandseek.seekers[args["tagged"].id] = {args["tagged"],seeker=true}
-					self.network:sendToClients("client_badCode",sm.hideandseek.seekers)
 				else
 					sm.hideandseek.seekers[args["tagged"].id] = {args["tagged"],seeker=false}
-					self.network:sendToClients("client_badCode",sm.hideandseek.seekers)
 				end
+				self.network:sendToClients("client_badCode",sm.hideandseek.seekers)
 				sm.hideandseek.score[args["tagger"].id].tags = sm.hideandseek.score[args["tagger"].id].tags + 1
 				sm.hideandseek.score[args["tagged"].id].hidetime = os.time()
 				self.network:sendToClients("client_badCode2",sm.hideandseek.score)
+				sm.event.sendToWorld(self.sv.activeWorld,"server_effect",{name="Woc - Destruct",pos=sm.player.getAllPlayers()[1].character.worldPosition})
 			end
 		elseif args["tagger"].id == 1 and sm.hideandseek.settings.PickSeekers and not sm.challenge.hasStarted() and not self.sv.countdownStarted then
 			if sm.hideandseek.seekers[args["tagged"].id] then
@@ -325,13 +325,24 @@ function Game.server_onPlayerJoined( self, player, isNewPlayer )
     if not sm.exists( self.sv.activeWorld ) then
         sm.world.loadWorld( self.sv.activeWorld )
     end
-    self.sv.activeWorld:loadCell( 0, 0, player, "sv_createPlayerCharacter" )
 	
 	if player.id == 1 then
-		sm.gui.chatMessage("[------------------------]\nWelcome to hide & seek gamemode!")
+		sm.gui.chatMessage("[------------------------]\nWelcome to hide & seek gamemode!\nCommands:\n/fly\n/return\n/score\n/settings")
 	end
 	
-	sm.hideandseek.score[player.id] = {plr=player,tags=0}
+	sm.hideandseek.score[player.id] = {plr=player,tags=0,hidetime=(G_ChallengeStartTick or 0)}
+
+	if sm.challenge.hasStarted() then
+		if sm.hideandseek.BecomeSeekers then
+			sm.hideandseek.seekers[args["tagged"].id] = {args["tagged"],seeker=true}
+		else
+			sm.hideandseek.seekers[args["tagged"].id] = {args["tagged"],seeker=false}
+		end
+		self.network:sendToClients("client_badCode",sm.hideandseek.seekers)
+		sm.event.sendToWorld(self.sv.activeWorld,"createCharacterOnSpawner",{players={player},uuid="b5858089-d1f8-4d13-a485-fdcb204d9c6b"})
+	else
+		self.sv.activeWorld:loadCell( 0, 0, player, "sv_createPlayerCharacter" )
+	end
 	self.network:sendToClients("client_badCode2",sm.hideandseek.score)
 	self.network:sendToClients("client_badCode3",G_ChallengeStartTick)
 	
@@ -513,6 +524,9 @@ end
 
 function Game.server_updateSettings(self,args)
 	sm.hideandseek.settings[args["editbox"]] = args["value"]
+	if self.sv.activeWorld ~= self.sv.saved.buildWorld then
+		sm.game.setLimitedInventory(not sm.hideandseek.settings.Limited)
+	end
 end
 
 function Game.client_settingsUpdate( self, editbox, text )	
