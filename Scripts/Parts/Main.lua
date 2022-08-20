@@ -39,17 +39,16 @@ function Main.server_onDestroy(self)
 end
 
 function Main.server_setValues(self,boolean,player)
-	if player.id == 1 then -- Only the host may use this.
-		sm.event.sendToGame("server_setValues", {self.sv.saved,boolean,player})
-	end
+	if player and player.id ~= 1 then print(player:getName().. " Fired \"Main.server_setValues!\"") return end
+	sm.event.sendToGame("server_setValues", {self.sv.saved,boolean,player})
 end
 
 function Main.server_setSettings(self,values)
 	self.sv.saved.settings = values
 end
 
-function Main.server_save(self)
-
+function Main.server_save(self, args, player)
+	if player and player.id ~= 1 then print(player:getName().. " Fired \"Main.server_save!\"") return end
 	--local CustomWorld = "$CONTENT_8b575391-5eb4-488e-980e-01352a88a1ad/world.world" -- Make sure your world and any custom tiles are include the blueprint $CONTENT_BLUEPRINTUUID/worldname.world (includes terrain)
 	--local CustomTiles = {} -- Make sure the tiles are instead your blueprint $CONTENT_BLUEPRINTUUID/tilename.tile (these include no terrain)
 	self.sv.saved = self.sv.saved or {}
@@ -72,7 +71,8 @@ function Main.server_save(self)
 	end
 end
 
-function Main.server_load(self)
+function Main.server_load(self, args, player)
+	if player and player.id ~= 1 then print(player:getName().. " Fired \"Main.server_load!\"") return end
 	local ContentMissing = false
 	local String = "----[Content Verifyer]----\n"
 	for key, tile in pairs(self.sv.saved.tiles) do

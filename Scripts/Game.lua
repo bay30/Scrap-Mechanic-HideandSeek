@@ -239,8 +239,8 @@ function Game:reload_inventory()
 	end
 end
 
-function Game.server_load( self, args )
-
+function Game.server_load( self, args, player )
+	if player and player.id ~= 1 then print(player:getName().. " Fired \"Game.server_load!\"") return end
 	if args == false then
 
 		sm.game.setLimitedInventory(not self.sv.settings.Limited)
@@ -306,7 +306,6 @@ function Game.server_load( self, args )
 		self:sv_start()
 		self.sv.gameRunning = false
 	end
-	
 end
 
 function Game.server_onCommand( self, args )
@@ -315,7 +314,8 @@ function Game.server_onCommand( self, args )
 	end
 end
 
-function Game.server_setWorld( self, args )
+function Game.server_setWorld( self, args, player )
+	if player and player.id ~= 1 then print(player:getName().. " Fired \"Game.server_setWorld!\"") return end
 	if args == "build" then
 		self.sv.seekers = {}
 		self.network:setClientData({Variable="seekers",Value=self.sv.seekers})
@@ -387,7 +387,8 @@ function Game.sv_createPlayerCharacter( self, world, x, y, player, params )
 	player:setCharacter( character )
 end
 
-function Game.server_updateSettings(self,args)
+function Game.server_updateSettings(self,args, player)
+	if player and player.id ~= 1 then print(player:getName().. " Fired \"Game.server_updateSettings!\"") return end
 	self.sv.settings[args["editbox"]] = args["value"]
 	if self.sv.activeWorld ~= self.sv.saved.buildWorld then
 		sm.game.setLimitedInventory(not self.sv.settings.Limited)
