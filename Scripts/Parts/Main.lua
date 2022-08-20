@@ -22,13 +22,13 @@ function Main.server_onCreate(self)
 		self.sv.saved.blueprints = {}
 		self.storage:save(self.sv.saved)
 	end
+	print(self.sv.saved.settings)
 	if FromStorage then
-		self:server_load()
 		if Main.id ~= self.shape.id then
-			self:server_setValues()
+			self:server_load()
+			self:server_setValues(true,sm.player.getAllPlayers()[1])
 			Main.id = self.shape.id
 		end
-		self.network:sendToClient(sm.player.getAllPlayers()[1], "client_onOpenGui")
 	end
 end
 
@@ -38,15 +38,21 @@ function Main.server_onDestroy(self)
 	end
 end
 
-function Main.server_setValues(self)
-	sm.event.sendToGame("server_setValues", self.sv.saved)
+function Main.server_setValues(self,boolean,player)
+	if player.id == 1 then -- Only the host may use this.
+		sm.event.sendToGame("server_setValues", {self.sv.saved,boolean,player})
+	end
+end
+
+function Main.server_setSettings(self,values)
+	self.sv.saved.settings = values
 end
 
 function Main.server_save(self)
 
 	--local CustomWorld = "$CONTENT_8b575391-5eb4-488e-980e-01352a88a1ad/world.world" -- Make sure your world and any custom tiles are include the blueprint $CONTENT_BLUEPRINTUUID/worldname.world (includes terrain)
 	--local CustomTiles = {} -- Make sure the tiles are instead your blueprint $CONTENT_BLUEPRINTUUID/tilename.tile (these include no terrain)
-	self.sv.saved = {}
+	self.sv.saved = self.sv.saved or {}
 
 	self.sv.saved.blueprints = {}
 	for key, creation in pairs(sm.body.getCreationsFromBodies(sm.body.getAllBodies())) do
@@ -58,9 +64,6 @@ function Main.server_save(self)
 	self.sv.saved.tiles = CustomTiles or
 		{ "$CONTENT_DATA/Terrain/Tiles/challengemode_env_DT.tile", "$CONTENT_DATA/Terrain/Tiles/ChallengeBuilderDefault.tile" }
 
-	if sm.hideandseek then
-		self.sv.saved.settings = sm.hideandseek.settings
-	end
 	local success, result = pcall(function()
 		self.storage:save(self.sv.saved)
 	end)
@@ -101,23 +104,18 @@ end
 
 function Main.client_onInteract(self, character, state)
 	if not state or not sm.isHost then return end
-	self.network:sendToServer("server_setValues")
+	self.network:sendToServer("server_setValues",true)
 	self.network:sendToServer("server_load")
-	self:client_onOpenGui()
 end
 
 function Main.client_onTinker(self, character, state)
 	if not state then return end
 	self.network:sendToServer("server_save")
-	return isHost
+	return sm.isHost
 end
 
 function Main.client_canInteract(self)
 	sm.gui.setInteractionText("", sm.gui.getKeyBinding("Use"), "Open Gui")
 	sm.gui.setInteractionText("", sm.gui.getKeyBinding("Tinker"), "Save")
 	return sm.isHost
-end
-
-function Main.client_onOpenGui(self)
-	sm.event.sendToGame("client_createSettings", { isBlock = true, open = true, play = true, explore = true })
 end
