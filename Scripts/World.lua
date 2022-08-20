@@ -49,6 +49,7 @@ table.find = function(tab, val)
 end
 
 function World.destructive(self, state)
+	print(state)
 	for key, body in pairs(sm.body.getAllBodies()) do
 		if sm.exists(body) then
 			body.destructable = state
@@ -79,6 +80,19 @@ end
 
 function World.server_onInteractableDestroyed(self, interactable)
 	ChallengeBaseWorld.server_onInteractableDestroyed(self, interactable)
+end
+
+function World.server_onCollision(self, obj1, obj2, position)
+	if sm.exists(obj1) and sm.exists(obj2) then
+		if type(obj1) == "Character" and type(obj2) == "Character" then
+			local plr1 = obj1:getPlayer()
+			local plr2 = obj2:getPlayer()
+			if plr1 and plr2 then
+				sm.event.sendToGame("server_onTag", { tagger = plr1, tagged = plr2 })
+				sm.event.sendToGame("server_onTag", { tagger = plr2, tagged = plr1 })
+			end
+		end
+	end
 end
 
 function World.server_onProjectile(self, position, airTime, velocity, projectileName, shooter, damage, customData, normal
@@ -182,7 +196,7 @@ function World.client_celebrate(self)
 end
 
 function World.client_createEffect(self, args)
-	sm.effect.playEffect(args.name, args.pos or sm.vec3.new(0, 0, 0), args.velocity or sm.vec3.new(0, 0, 0),
+	sm.effect.playEffect(args.name, args.pos or sm.camera.getPosition(), args.velocity or sm.vec3.new(0, 0, 0),
 		args.rot or sm.quat.identity(), args.scale or sm.vec3.new(1, 1, 1), args.parameter or {})
 end
 

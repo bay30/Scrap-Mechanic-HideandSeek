@@ -46,7 +46,6 @@ end
 
 function Main.server_setSettings(self,values)
 	self.sv.saved.settings = values
-	print(values)
 end
 
 function Main.server_save(self)

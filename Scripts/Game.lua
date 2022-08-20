@@ -107,7 +107,7 @@ function Game.server_onFixedUpdate( self, delta )
 			if sm.exists(obj) then
 				if obj.interactable.active and not self.sv.countdownStarted then
 					self.sv.countdownStarted = true
-					self.sv.countdownTime = tonumber(self.sv.settings.HideTime) or 60
+					self.sv.countdownTime = os.time()
 
 					for key,plr in pairs(sm.player.getAllPlayers()) do
 						if plr.character then
@@ -124,15 +124,14 @@ function Game.server_onFixedUpdate( self, delta )
 		end
 	end
 	if self.sv.activeWorld ~= self.sv.saved.buildWorld then
-		if self.sv.countdownStarted and self.sv.countdownTime > 1 then
-			self.sv.countdownTime = self.sv.countdownTime - delta
-			local seconds = self.sv.countdownTime
+		local CountdownNumber = self.sv.countdownTime + (tonumber(self.sv.settings.HideTime) or 60) - os.time()
+		if self.sv.countdownStarted and CountdownNumber > 0 then
+			local seconds = CountdownNumber
 			local minutes = seconds/60
 			local hours = minutes/60
 			self.network:sendToClients("client_displayAlert",string.format( "%02i:%02i:%02i", hours%60, minutes%60, seconds%60 ))
 		elseif self.sv.countdownStarted and not self:sv_hasStarted() then
 			self:sv_start()
-			self.sv.countdownTime = self.sv.countdownTime - delta
 			self.network:sendToClients("client_displayAlert","Seekers have been released")
 			local FilteredPlayers = {}
 			for _,plr in pairs(sm.player.getAllPlayers()) do
@@ -150,6 +149,12 @@ function Game.server_onFixedUpdate( self, delta )
 		self.network:sendToClients("client_displayTimer",string.format( "%02i:%02i:%02i", hours%60, minutes%60, seconds%60 ))
 		if seconds <= 0 then
 			self.sv.gameRunning = false
+			for key,plr in pairs(sm.player.getAllPlayers()) do
+				if self.sv.seekers[plr.id] == nil then
+					self.sv.score[plr.id].hidetime = os.time()
+				end
+			end
+			self.network:setClientData({ Variable="score",Value=self.sv.score })
 			self.network:sendToClients("client_displayTimer","00:00:00")
 			self.network:sendToClients("client_displayAlert","Game over!")
 			sm.event.sendToWorld(self.sv.activeWorld,"server_celebrate")
@@ -192,7 +197,7 @@ end
 
 function Game.server_onTaunt( self, args, player )
 	if player.character then
-		self.network:sendToClients("client_createEffect",{name="Horn",pos=player.character:getWorldPosition()-sm.vec3.new(0,0.5,0),rot=sm.quat.fromEuler(sm.vec3.new(90,0,0))}) 
+		self.network:sendToClients("client_createEffect",{name="Horn",pos=player.character:getWorldPosition()})
 	end
 end
 
@@ -213,6 +218,25 @@ function Game.server_getTableLength( self, tab )
 		a=a+1
 	end
 	return a
+end
+
+function Game:reload_inventory()
+	local Array = {}
+	if self.sv.settings.Hammer then
+		table.insert(Array,"09845ac0-4785-4ce8-98b3-0aa4a88c4bdd")
+	end
+	if self.sv.settings.Spudgun then
+		table.insert(Array,"041d874e-46b3-49ec-8b26-e3db9770c6fd")
+	end
+
+	for _,plr in pairs(sm.player.getAllPlayers()) do 
+		local inventoryContainer = self.sv.settings.Limited and plr:getHotbar() or plr:getInventory()
+		sm.container.beginTransaction()
+		for i = 0,inventoryContainer.size do
+			sm.container.setItem( inventoryContainer, i, sm.uuid.new(Array[i+1] or "00000000-0000-0000-0000-000000000000"), 1 )
+		end
+		sm.container.endTransaction()
+	end
 end
 
 function Game.server_load( self, args )
@@ -243,22 +267,7 @@ function Game.server_load( self, args )
 		-- Seekers --
 	
 		-- Inv --
-		local Array = {}
-		if self.sv.settings.Hammer then
-			table.insert(Array,"09845ac0-4785-4ce8-98b3-0aa4a88c4bdd")
-		end
-		if self.sv.settings.Spudgun then
-			table.insert(Array,"041d874e-46b3-49ec-8b26-e3db9770c6fd")
-		end
-
-		for _,plr in pairs(sm.player.getAllPlayers()) do 
-			local inventoryContainer = plr:getInventory()
-			sm.container.beginTransaction()
-			for i = 0,inventoryContainer.size do
-				sm.container.setItem( inventoryContainer, i, sm.uuid.new(Array[i+1] or "00000000-0000-0000-0000-000000000000"), 1 )
-			end
-			sm.container.endTransaction()
-		end
+		self:reload_inventory()
 		-- Inv --
 		
 	else
@@ -275,7 +284,7 @@ function Game.server_load( self, args )
 			body.buildable = false
 			body.usable = false
 			body.liftable = false
-			body.destructable = self.sv.settings.destructable
+			body.destructable = self.sv.settings.Destruction
 			for key,shape in pairs(body:getShapes()) do
 				if shape.uuid == sm.uuid.new("4a9929e9-aa85-4791-89c2-f8799920793f") then
 					if not self.sv.objectlist.starters then
@@ -314,6 +323,8 @@ function Game.server_setWorld( self, args )
 		sm.game.setLimitedInventory(false)
 		self.sv.gameRunning = false
 		self.network:sendToClients("client_displayTimer","00:00:00")
+		self.sv.G_ChallengeStartTick = 0
+		self.network:setClientData( {Variable="G_ChallengeStartTick",Value=self.sv.G_ChallengeStartTick} )
 		if self.sv.activeWorld ~= self.sv.saved.buildWorld then
 			self.sv.objectlist = {}
 			self.sv.activeWorld:destroy()
@@ -374,6 +385,33 @@ function Game.sv_createPlayerCharacter( self, world, x, y, player, params )
 	local pos,pitch,yaw = self:createCharacterOnSpawner(player,self.sv.SpawnerList or {},sm.vec3.new( 2, 2, 20 ))
     local character = sm.character.createCharacter( player, world, pos, pitch,yaw )
 	player:setCharacter( character )
+end
+
+function Game.server_updateSettings(self,args)
+	self.sv.settings[args["editbox"]] = args["value"]
+	if self.sv.activeWorld ~= self.sv.saved.buildWorld then
+		sm.game.setLimitedInventory(not self.sv.settings.Limited)
+		sm.event.sendToWorld(self.sv.activeWorld,"destructive",self.sv.settings.Destruction)
+		self:reload_inventory()
+	end
+	if Main and Main.one and sm.exists(Main.one) then
+		local interactable = Main.one:getInteractable()
+		if interactable and sm.exists(interactable) then
+			sm.event.sendToInteractable(interactable,"server_setSettings",self.sv.settings)
+		end
+	end
+	self.network:setClientData({Variable="settings",Value=self.sv.settings})
+end
+
+function Game.server_fly( self, params, player )
+	if player and player.character then
+		if not player.character:isSwimming() then
+			player.character.publicData.waterMovementSpeedFraction = 5
+		else
+			player.character.publicData.waterMovementSpeedFraction = 1
+		end
+		player.character:setSwimming(not player.character:isSwimming())
+	end
 end
 
 -- Client --
@@ -461,9 +499,14 @@ function Game.client_onFixedUpdate( self )
 				self.cl.gui.score.gui:setText("Player"..i,NameColor..tostring(score.plr:getName()))
 				self.cl.gui.score.gui:setText("TextScore"..i,tostring(score.tags))
 				
-				local seconds = ( score.hidetime or os.time() ) - self.cl.G_ChallengeStartTick
-				local minutes = seconds/ 60 % 60
-				local hours = minutes/ 60 % 60
+				local seconds = 0
+				local minutes = 0
+				local hours = 0
+				if self.cl.G_ChallengeStartTick ~= 0 then
+					seconds = ( score.hidetime or os.time() ) - self.cl.G_ChallengeStartTick
+					minutes = seconds/ 60 % 60
+					hours = minutes/ 60 % 60
+				end
 				
 				self.cl.gui.score.gui:setText("TextTime"..i,string.format( "%02i:%02i:%02i", hours, minutes, seconds % 60 ))
 			else
@@ -480,7 +523,7 @@ function Game.client_onFixedUpdate( self )
 	end
 	if Player and Player.character then
 		for key,plr in pairs(sm.player.getAllPlayers()) do
-			if plr.character and plr ~= sm.localPlayer.getPlayer() then
+			if plr.character then
 				if not AmSeeker or self.cl.seekers[plr.id] then
 					local Distance = math.floor((plr.character:getWorldPosition()-Player.character:getWorldPosition()):length2()/4)
 					local Color = sm.color.new(1,1,1)
@@ -549,20 +592,6 @@ function Game.client_createSettings( self, args )
 	return Gui
 end
 
-function Game.server_updateSettings(self,args)
-	self.sv.settings[args["editbox"]] = args["value"]
-	if self.sv.activeWorld ~= self.sv.saved.buildWorld then
-		sm.game.setLimitedInventory(not self.sv.settings.Limited)
-	end
-	if Main and Main.one and sm.exists(Main.one) then
-		local interactable = Main.one:getInteractable()
-		if interactable and sm.exists(interactable) then
-			sm.event.sendToInteractable(interactable,"server_setSettings",self.sv.settings)
-		end
-	end
-	self.network:setClientData({Variable="settings",Value=self.sv.settings})
-end
-
 function Game.client_settingsUpdate( self, editbox, text )	
 	local Result = tostring( tonumber(text) or self.cl.gui["settings"][editbox] or 0 )
 	self.cl.gui["settings"]["gui"]:setText(editbox,Result)
@@ -606,27 +635,6 @@ function Game.client_createEffect( self, args )
 	sm.event.sendToWorld(sm.localPlayer.getPlayer().character:getWorld(),"client_createEffect",args)
 end
 
-function Game.client_badCode( self, args )
-	print("Replace this1")
-	if not sm.isHost then
-		self.cl.seekers = args
-	end
-end
-
-function Game.client_badCode2( self, args )
-	print("Replace this2")
-	if not sm.isHost then
-		self.cl.score = args
-	end
-end
-
-function Game.client_badCode3( self, args )
-	print("Replace this3")
-	if not sm.isHost then
-		self.cl.G_ChallengeStartTick = args
-	end
-end
-
 function Game:client_onClientDataUpdate( data, channel )
 	if data["Variable"] ~= nil and data["Value"] ~= nil then
 		self.cl[data["Variable"]] = data["Value"]
@@ -634,16 +642,5 @@ function Game:client_onClientDataUpdate( data, channel )
 		for i,v in ipairs(data) do
 			self.cl[v["Variable"]] = v["Value"]
 		end
-	end
-end
-
-function Game.server_fly( self, params, player )
-	if player and player.character then
-		if not player.character:isSwimming() then
-			player.character.publicData.waterMovementSpeedFraction = 5
-		else
-			player.character.publicData.waterMovementSpeedFraction = 1
-		end
-		player.character:setSwimming(not player.character:isSwimming())
 	end
 end
