@@ -154,7 +154,7 @@ function Game.server_onFixedUpdate( self, delta )
 					self.sv.score[plr.id].hidetime = os.time()
 				end
 			end
-			self.network:setClientData({ Variable="score",Value=self.sv.score })
+			self.network:setClientData({{ Variable="score",Value=self.sv.score },{ Variable="gameRunning",Value=self.sv.gameRunning}})
 			self.network:sendToClients("client_displayTimer","00:00:00")
 			self.network:sendToClients("client_displayAlert","Game over!")
 			sm.event.sendToWorld(self.sv.activeWorld,"server_celebrate")
@@ -164,6 +164,7 @@ function Game.server_onFixedUpdate( self, delta )
 		self.network:sendToClients("client_displayTimer","00:00:00")
 		self.network:sendToClients("client_displayAlert","Game over!")
 		sm.event.sendToWorld(self.sv.activeWorld,"server_celebrate")
+		self.network:setClientData({Variable="gameRunning",Value=self.sv.gameRunning})
 	end
 end
 
@@ -305,6 +306,7 @@ function Game.server_load( self, args, player )
 	if args ~= false then
 		self:sv_start()
 		self.sv.gameRunning = false
+		self.network:setClientData({Variable="gameRunning",Value=self.sv.gameRunning})
 	end
 end
 
@@ -324,7 +326,7 @@ function Game.server_setWorld( self, args, player )
 		self.sv.gameRunning = false
 		self.network:sendToClients("client_displayTimer","00:00:00")
 		self.sv.G_ChallengeStartTick = 0
-		self.network:setClientData( {Variable="G_ChallengeStartTick",Value=self.sv.G_ChallengeStartTick} )
+		self.network:setClientData({ {Variable="G_ChallengeStartTick",Value=self.sv.G_ChallengeStartTick}, {Variable="gameRunning",Value=self.sv.gameRunning} })
 		if self.sv.activeWorld ~= self.sv.saved.buildWorld then
 			self.sv.objectlist = {}
 			self.sv.activeWorld:destroy()
@@ -341,6 +343,7 @@ function Game.server_setWorld( self, args, player )
 			self.sv.activeWorld:destroy()
 		end
 		self.sv.activeWorld = sm.world.createWorld( "$CONTENT_DATA/Scripts/World.lua", "World", { world=self.sv.world, tiles=self.sv.tiles, play=true } )
+		self.network:setClientData({Variable="gameRunning",Value=self.sv.gameRunning})
 	end
 end
 
@@ -371,7 +374,7 @@ function Game.server_onPlayerJoined( self, player, isNewPlayer )
 
 	table.insert(self.sv.seekerqueue,math.random(1,#self.sv.seekerqueue),player)
 
-	self.network:setClientData({ {Variable="G_ChallengeStartTick",Value=self.sv.G_ChallengeStartTick}, {Variable="score",Value=self.sv.score} })
+	self.network:setClientData({ {Variable="G_ChallengeStartTick",Value=self.sv.G_ChallengeStartTick}, {Variable="score",Value=self.sv.score}, {Variable="gameRunning",Value=self.sv.gameRunning} })
 	
 end
 
@@ -426,7 +429,7 @@ function Game.client_displayAlert( self, text )
 end
 
 function Game.client_displayTimer( self, text )
-	if self:cl_hasStarted() and self.sv.gameRunning then
+	if self:cl_hasStarted() and self.cl.gameRunning then
 		self.cl.gui["timer"]:setVisible("Time",true)
 		self.cl.gui["timer"]:setText("Time", text)
 	else
@@ -526,7 +529,7 @@ function Game.client_onFixedUpdate( self )
 		for key,plr in pairs(sm.player.getAllPlayers()) do
 			if plr.character then
 				if not AmSeeker or self.cl.seekers[plr.id] then
-					local Distance = math.floor((plr.character:getWorldPosition()-Player.character:getWorldPosition()):length2()/4)
+					local Distance = math.floor((plr.character:getWorldPosition()-Player.character:getWorldPosition()):length2())
 					local Color = sm.color.new(1,1,1)
 					if self.cl.seekers[plr.id] then
 						if self.cl.seekers[plr.id]["seeker"] then
