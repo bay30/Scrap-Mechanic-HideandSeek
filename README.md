@@ -15,5 +15,5 @@ Seekers spawn on `Seeker Spawnpoint`
 Lobby spawn on `Challenge Spawnpoint`
 
 ## Credits
-Credit to Brent Batch for the guis & motivation
+Credit to Brent Batch for the guis & motivation <br />
 Credits to MrCrackx02 for helping with me testing mutiplayer
