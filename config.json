@@ -5,7 +5,7 @@
       "file" : "$CONTENT_DATA/Scripts/Game.lua"
    },
    "playerScript" : {
-      "class" : "Player",
-      "file" : "$CONTENT_DATA/Scripts/Player.lua"
+      "class" : "BasePlayer",
+      "file" : "$GAME_DATA/Scripts/game/BasePlayer.lua"
    }
 }
