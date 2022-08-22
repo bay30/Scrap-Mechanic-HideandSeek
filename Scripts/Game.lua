@@ -69,13 +69,13 @@ function Game:sv_start()
 		for key,plr in pairs(sm.player.getAllPlayers()) do
 			self.sv.score[plr.id] = {plr=plr,tags=0}
 			if self.sv.seekers[plr.id] then
-				self.sv.score[plr.id].hidetime = os.time()
+				self.sv.score[plr.id].hidetime = sm.game.getCurrentTick()
 			end
 		end
 		self.network:setClientData({Variable="score",Value=self.sv.score})
 
 		self.sv.G_ChallengeStarted = true
-		self.sv.G_ChallengeStartTick = os.time()
+		self.sv.G_ChallengeStartTick = sm.game.getCurrentTick()
 		self.network:setClientData( {Variable="G_ChallengeStartTick",Value=self.sv.G_ChallengeStartTick} )
 		self.network:setClientData( {Variable="G_ChallengeStarted",Value=self.sv.G_ChallengeStarted} )
 
@@ -107,7 +107,7 @@ function Game.server_onFixedUpdate( self, delta )
 			if sm.exists(obj) then
 				if obj.interactable.active and not self.sv.countdownStarted then
 					self.sv.countdownStarted = true
-					self.sv.countdownTime = os.time()
+					self.sv.countdownTime = sm.game.getCurrentTick()
 
 					for key,plr in pairs(sm.player.getAllPlayers()) do
 						if plr.character then
@@ -124,9 +124,9 @@ function Game.server_onFixedUpdate( self, delta )
 		end
 	end
 	if self.sv.activeWorld ~= self.sv.saved.buildWorld then
-		local CountdownNumber = self.sv.countdownTime + (tonumber(self.sv.settings.HideTime) or 60) - os.time()
+		local CountdownNumber = self.sv.countdownTime + (tonumber(self.sv.settings.HideTime) or 60) * 40 - sm.game.getCurrentTick()
 		if self.sv.countdownStarted and CountdownNumber > 0 then
-			local seconds = CountdownNumber
+			local seconds = CountdownNumber/40
 			local minutes = seconds/60
 			local hours = minutes/60
 			self.network:sendToClients("client_displayAlert",string.format( "%02i:%02i:%02i", hours%60, minutes%60, seconds%60 ))
@@ -143,7 +143,8 @@ function Game.server_onFixedUpdate( self, delta )
 		end
 	end
 	if self:sv_hasStarted() and self.sv.settings.GameTime and self.sv.settings.GameTime ~= 0 then
-		local seconds = (self.sv.G_ChallengeStartTick+self.sv.settings.GameTime)-os.time()
+		local milliseconds = (self.sv.G_ChallengeStartTick+self.sv.settings.GameTime*40)-sm.game.getCurrentTick()
+		local seconds = milliseconds/40
 		local minutes = seconds/60
 		local hours = minutes/60
 		self.network:sendToClients("client_displayTimer",string.format( "%02i:%02i:%02i", hours%60, minutes%60, seconds%60 ))
@@ -151,7 +152,7 @@ function Game.server_onFixedUpdate( self, delta )
 			self.sv.gameRunning = false
 			for key,plr in pairs(sm.player.getAllPlayers()) do
 				if self.sv.seekers[plr.id] == nil then
-					self.sv.score[plr.id].hidetime = os.time()
+					self.sv.score[plr.id].hidetime = sm.game.getCurrentTick()
 				end
 			end
 			self.network:setClientData({{ Variable="score",Value=self.sv.score },{ Variable="gameRunning",Value=self.sv.gameRunning}})
@@ -178,7 +179,7 @@ function Game.server_onTag( self, args )
 					self.sv.seekers[args["tagged"].id] = {args["tagged"],seeker=false}
 				end
 				self.sv.score[args["tagger"].id].tags = self.sv.score[args["tagger"].id].tags + 1
-				self.sv.score[args["tagged"].id].hidetime = os.time()
+				self.sv.score[args["tagged"].id].hidetime = sm.game.getCurrentTick()
 				self.network:setClientData({ {Variable="seekers",Value=self.sv.seekers}, {Variable="score",Value=self.sv.score} })
 				sm.event.sendToWorld(self.sv.activeWorld,"server_effect",{name="Woc - Destruct",pos=sm.player.getAllPlayers()[1].character.worldPosition})
 			end
@@ -375,6 +376,7 @@ function Game.server_onPlayerJoined( self, player, isNewPlayer )
 	table.insert(self.sv.seekerqueue,math.random(1,#self.sv.seekerqueue),player)
 
 	self.network:setClientData({ {Variable="G_ChallengeStartTick",Value=self.sv.G_ChallengeStartTick}, {Variable="score",Value=self.sv.score}, {Variable="gameRunning",Value=self.sv.gameRunning} })
+	self.network:sendToClient(player,"UpdateTicker",sm.game.getCurrentTick())
 	
 end
 
@@ -437,10 +439,6 @@ function Game.client_displayTimer( self, text )
 	end
 end
 
-function Game:client_onRefresh()
-	print(self.cl.G_ChallengeStarted)
-end
-
 function Game.client_onCreate( self )
 	
 	self.cl = {}
@@ -451,6 +449,7 @@ function Game.client_onCreate( self )
 	self.cl.score = {}
 	self.cl.seekers = {}
 	self.cl.selectedseekers = {}
+	self.cl.tickoffset = 0
 
 	sm.challenge.hasStarted = function()
 		return self.cl.G_ChallengeStarted
@@ -507,7 +506,8 @@ function Game.client_onFixedUpdate( self )
 				local minutes = 0
 				local hours = 0
 				if self.cl.G_ChallengeStartTick ~= 0 then
-					seconds = ( score.hidetime or os.time() ) - self.cl.G_ChallengeStartTick
+					local milliseconds = ( score.hidetime or self.cl.tickoffset+sm.game.getCurrentTick() ) - self.cl.G_ChallengeStartTick
+					seconds = milliseconds/40
 					minutes = seconds/ 60 % 60
 					hours = minutes/ 60 % 60
 				end
@@ -647,4 +647,8 @@ function Game:client_onClientDataUpdate( data, channel )
 			self.cl[v["Variable"]] = v["Value"]
 		end
 	end
+end
+
+function Game:UpdateTicker( data )
+	self.cl.tickoffset = data - sm.game.getCurrentTick()
 end
