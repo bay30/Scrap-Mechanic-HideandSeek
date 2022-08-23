@@ -49,13 +49,16 @@ end
 
 function Main.server_save(self, args, player)
 	if player and player.id ~= 1 then print(player:getName().. " Fired \"Main.server_save!\"") return end
-	--local CustomWorld = "$CONTENT_8b575391-5eb4-488e-980e-01352a88a1ad/world.world" -- Make sure your world and any custom tiles are include the blueprint $CONTENT_BLUEPRINTUUID/worldname.world (includes terrain)
-	--local CustomTiles = {} -- Make sure the tiles are instead your blueprint $CONTENT_BLUEPRINTUUID/tilename.tile (these include no terrain)
+	local CustomWorld
+	local CustomTiles
+	--CustomWorld = "$CONTENT_8b575391-5eb4-488e-980e-01352a88a1ad/world.world" -- Make sure your world and any custom tiles are include the blueprint $CONTENT_BLUEPRINTUUID/worldname.world (includes terrain)
+	--CustomTiles = {} -- Make sure the tiles are instead your blueprint $CONTENT_BLUEPRINTUUID/tilename.tile (these include no terrain)
 	self.sv.saved = self.sv.saved or {}
 
 	self.sv.saved.blueprints = {}
+	self.storage:save(self.sv.saved)
 	for key, creation in pairs(sm.body.getCreationsFromBodies(sm.body.getAllBodies())) do
-		local blueprint = sm.creation.exportToString(creation[1], true, false)
+		local blueprint = sm.creation.exportToString(creation[1], true, creation[1]:isOnLift())
 		table.insert(self.sv.saved.blueprints, blueprint)
 	end
 
