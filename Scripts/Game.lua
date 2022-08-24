@@ -5,6 +5,7 @@ dofile( "$SURVIVAL_DATA/Scripts/game/survival_projectiles.lua" )
 dofile( "$SURVIVAL_DATA/Scripts/game/survival_meleeattacks.lua" )
 dofile( "$SURVIVAL_DATA/Scripts/game/managers/EffectManager.lua" )
 dofile( "$SURVIVAL_DATA/Scripts/game/managers/UnitManager.lua" )
+dofile( "$CONTENT_DATA/Scripts/Utils/Events.lua" )
 
 ---@class Game : GameClass
 ---@field sv table
@@ -94,6 +95,7 @@ function Game.server_onRefresh(self)
 end
 
 function Game.server_onFixedUpdate( self, delta )
+	FireEvent("Tick",sm.game.getCurrentTick()) 
 	g_unitManager:sv_onFixedUpdate()
 	if not self.sv.gameRunning then return end
 	local Hiders = 0
@@ -279,26 +281,29 @@ function Game.server_load( self, args, player )
 	self:server_setWorld("play")
 	
 	self.sv.SpawnerList = {}
-	for key,creation in pairs(self.sv.blueprints or {}) do
-		local creation = sm.creation.importFromString( self.sv.activeWorld, creation, sm.vec3.zero(), sm.quat.identity(), true )
-		for _,body in ipairs(creation) do
-			body.erasable = false
-			body.buildable = false
-			body.usable = false
-			body.liftable = false
-			body.destructable = self.sv.settings.Destruction
-			for key,shape in pairs(body:getShapes()) do
-				if shape.uuid == sm.uuid.new("4a9929e9-aa85-4791-89c2-f8799920793f") then
-					if not self.sv.objectlist.starters then
-						self.sv.objectlist.starters = {}
+	local function Blueprints()
+		for key,creation in pairs(self.sv.blueprints or {}) do
+			local creation = sm.creation.importFromString( self.sv.activeWorld, creation, sm.vec3.zero(), sm.quat.identity(), true )
+			for _,body in ipairs(creation) do
+				body.erasable = false
+				body.buildable = false
+				body.usable = false
+				body.liftable = false
+				body.destructable = self.sv.settings.Destruction
+				for key,shape in pairs(body:getShapes()) do
+					if shape.uuid == sm.uuid.new("4a9929e9-aa85-4791-89c2-f8799920793f") then
+						if not self.sv.objectlist.starters then
+							self.sv.objectlist.starters = {}
+						end
+						table.insert(self.sv.objectlist.starters,shape)
+					elseif shape.uuid == sm.uuid.new("b5858089-b1f8-4d13-a485-fdaa204d9c6b") then
+						table.insert(self.sv.SpawnerList,{pos=shape.worldPosition,at=shape:getAt(),up=shape:getUp()})
 					end
-					table.insert(self.sv.objectlist.starters,shape)
-				elseif shape.uuid == sm.uuid.new("b5858089-b1f8-4d13-a485-fdaa204d9c6b") then
-					table.insert(self.sv.SpawnerList,{pos=shape.worldPosition,at=shape:getAt(),up=shape:getUp()})
 				end
 			end
 		end
 	end
+	Event("Tick",Blueprints,false,sm.game.getCurrentTick()+1)
 	
 	for key,plr in pairs(sm.player.getAllPlayers()) do
 		self.sv.activeWorld:loadCell( 0, 0, plr, "sv_createPlayerCharacter" )
@@ -376,7 +381,6 @@ function Game.server_onPlayerJoined( self, player, isNewPlayer )
 	table.insert(self.sv.seekerqueue,math.random(1,#self.sv.seekerqueue),player)
 
 	self.network:setClientData({ {Variable="G_ChallengeStartTick",Value=self.sv.G_ChallengeStartTick}, {Variable="score",Value=self.sv.score}, {Variable="gameRunning",Value=self.sv.gameRunning} })
-	self.network:sendToClient(player,"UpdateTicker",sm.game.getCurrentTick())
 	
 end
 
@@ -387,6 +391,7 @@ function Game.server_onPlayerLeft( self, player )
 end
 
 function Game.sv_createPlayerCharacter( self, world, x, y, player, params )
+	if x and type(x) ~= "number" then print(player:getName().. " Fired \"Game.sv_createPlayerCharacter!\"") return end
 	local pos,pitch,yaw = self:createCharacterOnSpawner(player,self.sv.SpawnerList or {},sm.vec3.new( 2, 2, 20 ))
     local character = sm.character.createCharacter( player, world, pos, pitch,yaw )
 	player:setCharacter( character )
@@ -449,7 +454,6 @@ function Game.client_onCreate( self )
 	self.cl.score = {}
 	self.cl.seekers = {}
 	self.cl.selectedseekers = {}
-	self.cl.tickoffset = 0
 
 	sm.challenge.hasStarted = function()
 		return self.cl.G_ChallengeStarted
@@ -506,7 +510,7 @@ function Game.client_onFixedUpdate( self )
 				local minutes = 0
 				local hours = 0
 				if self.cl.G_ChallengeStartTick ~= 0 then
-					local milliseconds = ( score.hidetime or self.cl.tickoffset+sm.game.getCurrentTick() ) - self.cl.G_ChallengeStartTick
+					local milliseconds = ( score.hidetime or sm.game.getServerTick() ) - self.cl.G_ChallengeStartTick
 					seconds = milliseconds/40
 					minutes = seconds/ 60 % 60
 					hours = minutes/ 60 % 60
@@ -647,8 +651,4 @@ function Game:client_onClientDataUpdate( data, channel )
 			self.cl[v["Variable"]] = v["Value"]
 		end
 	end
-end
-
-function Game:UpdateTicker( data )
-	self.cl.tickoffset = data - sm.game.getCurrentTick()
 end
