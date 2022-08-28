@@ -83,7 +83,7 @@ function World.server_onInteractableDestroyed(self, interactable)
 end
 
 function World.server_onCollision(self, obj1, obj2, position)
-	if sm.exists(obj1) and sm.exists(obj2) then
+	if sm.exists(obj1) and sm.exists(obj2) and sm.challenge.hasStarted() then
 		if type(obj1) == "Character" and type(obj2) == "Character" then
 			local plr1 = obj1:getPlayer()
 			local plr2 = obj2:getPlayer()

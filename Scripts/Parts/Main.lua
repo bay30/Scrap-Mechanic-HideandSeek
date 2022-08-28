@@ -1,3 +1,5 @@
+dofile("$CONTENT_DATA/Scripts/Utils/Network.lua")
+
 Main = class()
 Main.one = nil
 Main.id = 0
@@ -38,17 +40,18 @@ function Main.server_onDestroy(self)
 	end
 end
 
-function Main.server_setValues(self,boolean,player)
-	if player and player.id ~= 1 then print(player:getName().. " Fired \"Main.server_setValues!\"") return end
+function Main:server_setValues(boolean,player)
+	if not VaildateNetwork("Main server_setValues",{player=player},{ServerOnly=true,Auth=true}) then return end
 	sm.event.sendToGame("server_setValues", {self.sv.saved,boolean,player})
 end
 
-function Main.server_setSettings(self,values)
+function Main:server_setSettings(values,player)
+	if not VaildateNetwork("Main server_setSettings",{player=player},{ServerOnly=true,Auth=true}) then return end
 	self.sv.saved.settings = values
 end
 
 function Main.server_save(self, args, player)
-	if player and player.id ~= 1 then print(player:getName().. " Fired \"Main.server_save!\"") return end
+	if not VaildateNetwork("Main server_save",{player=player},{ServerOnly=true,Auth=true}) then return end
 	local CustomWorld
 	local CustomTiles
 	--CustomWorld = "$CONTENT_8b575391-5eb4-488e-980e-01352a88a1ad/world.world" -- Make sure your world and any custom tiles are include the blueprint $CONTENT_BLUEPRINTUUID/worldname.world (includes terrain)
@@ -74,8 +77,8 @@ function Main.server_save(self, args, player)
 	end
 end
 
-function Main.server_load(self, args, player)
-	if player and player.id ~= 1 then print(player:getName().. " Fired \"Main.server_load!\"") return end
+function Main:server_load(args, player)
+	if not VaildateNetwork("Main server_load",{player=player},{ServerOnly=true,Auth=true}) then return end
 	local ContentMissing = false
 	local String = "----[Content Verifyer]----\n"
 	for key, tile in pairs(self.sv.saved.tiles) do
