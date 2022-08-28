@@ -6,6 +6,7 @@ dofile( "$SURVIVAL_DATA/Scripts/game/survival_meleeattacks.lua" )
 dofile( "$SURVIVAL_DATA/Scripts/game/managers/EffectManager.lua" )
 dofile( "$SURVIVAL_DATA/Scripts/game/managers/UnitManager.lua" )
 dofile( "$CONTENT_DATA/Scripts/Utils/Events.lua" )
+dofile("$CONTENT_DATA/Scripts/Utils/Network.lua")
 
 ---@class Game : GameClass
 ---@field sv table
@@ -73,12 +74,10 @@ function Game:sv_start()
 				self.sv.score[plr.id].hidetime = sm.game.getCurrentTick()
 			end
 		end
-		self.network:setClientData({Variable="score",Value=self.sv.score})
 
 		self.sv.G_ChallengeStarted = true
 		self.sv.G_ChallengeStartTick = sm.game.getCurrentTick()
-		self.network:setClientData( {Variable="G_ChallengeStartTick",Value=self.sv.G_ChallengeStartTick} )
-		self.network:setClientData( {Variable="G_ChallengeStarted",Value=self.sv.G_ChallengeStarted} )
+		self.network:sendToClients("client_onJankyUpdate", {{Variable="G_ChallengeStarted",Value=self.sv.G_ChallengeStarted}, {Variable="G_ChallengeStartTick",Value=self.sv.G_ChallengeStartTick},{Variable="score",Value=self.sv.score}} )
 
 	end
 end
@@ -86,12 +85,8 @@ end
 function Game:sv_stop()
 	if self.sv.G_ChallengeStarted then
 		self.sv.G_ChallengeStarted = false
-		self.network:setClientData( {Variable="G_ChallengeStarted",Value=self.sv.G_ChallengeStarted} )
+		self.network:sendToClients("client_onJankyUpdate", {Variable="G_ChallengeStarted",Value=self.sv.G_ChallengeStarted} )
 	end
-end
-
-function Game.server_onRefresh(self)
-	--self:server_onTag({tagger=sm.player.getAllPlayers()[1],tagged=sm.player.getAllPlayers()[1]})
 end
 
 function Game.server_onFixedUpdate( self, delta )
@@ -157,7 +152,7 @@ function Game.server_onFixedUpdate( self, delta )
 					self.sv.score[plr.id].hidetime = sm.game.getCurrentTick()
 				end
 			end
-			self.network:setClientData({{ Variable="score",Value=self.sv.score },{ Variable="gameRunning",Value=self.sv.gameRunning}})
+			self.network:sendToClients("client_onJankyUpdate",{{ Variable="score",Value=self.sv.score },{ Variable="gameRunning",Value=self.sv.gameRunning}})
 			self.network:sendToClients("client_displayTimer","00:00:00")
 			self.network:sendToClients("client_displayAlert","Game over!")
 			sm.event.sendToWorld(self.sv.activeWorld,"server_celebrate")
@@ -167,7 +162,7 @@ function Game.server_onFixedUpdate( self, delta )
 		self.network:sendToClients("client_displayTimer","00:00:00")
 		self.network:sendToClients("client_displayAlert","Game over!")
 		sm.event.sendToWorld(self.sv.activeWorld,"server_celebrate")
-		self.network:setClientData({Variable="gameRunning",Value=self.sv.gameRunning})
+		self.network:sendToClients("client_onJankyUpdate",{Variable="gameRunning",Value=self.sv.gameRunning})
 	end
 end
 
@@ -182,18 +177,18 @@ function Game.server_onTag( self, args )
 				end
 				self.sv.score[args["tagger"].id].tags = self.sv.score[args["tagger"].id].tags + 1
 				self.sv.score[args["tagged"].id].hidetime = sm.game.getCurrentTick()
-				self.network:setClientData({ {Variable="seekers",Value=self.sv.seekers}, {Variable="score",Value=self.sv.score} })
-				sm.event.sendToWorld(self.sv.activeWorld,"server_effect",{name="Woc - Destruct",pos=sm.player.getAllPlayers()[1].character.worldPosition})
+				self.network:sendToClients("client_onJankyUpdate",{ {Variable="seekers",Value=self.sv.seekers}, {Variable="score",Value=self.sv.score} })
+				sm.event.sendToWorld(self.sv.activeWorld,"server_effect",{name="Woc - Destruct",pos=args["tagged"].character.worldPosition})
 			end
 		elseif args["tagger"].id == 1 and self.sv.settings.PickSeekers and not self:sv_hasStarted() and not self.sv.countdownStarted then
 			if self.sv.seekers[args["tagged"].id] then
 				self.sv.seekers[args["tagged"].id] = nil
 				self.sv.score[args["tagged"].id].hidetime = nil
-				self.network:setClientData({ {Variable="seekers",Value=self.sv.seekers}, {Variable="score",Value=self.sv.score} })
+				self.network:sendToClients("client_onJankyUpdate",{ {Variable="seekers",Value=self.sv.seekers}, {Variable="score",Value=self.sv.score} })
 			else
 				self.sv.seekers[args["tagged"].id] = {args["tagged"],seeker=true}
 				self.sv.score[args["tagged"].id].hidetime = nil
-				self.network:setClientData({ {Variable="seekers",Value=self.sv.seekers}, {Variable="score",Value=self.sv.score} })
+				self.network:sendToClients("client_onJankyUpdate",{ {Variable="seekers",Value=self.sv.seekers}, {Variable="score",Value=self.sv.score} })
 			end
 		end
 	end
@@ -205,12 +200,13 @@ function Game.server_onTaunt( self, args, player )
 	end
 end
 
-function Game.server_setValues( self, args )
+function Game:server_setValues( args, player )
+	if not VaildateNetwork("UtilsNetwork",{player=player},{ServerOnly=true,Auth=true}) then return end
 	self.sv.settings = args[1].settings or {}
 	self.sv.tiles = args[1].tiles or {}
 	self.sv.world = args[1].world or ""
 	self.sv.blueprints = args[1].blueprints or {}
-	self.network:setClientData({Variable="settings",Value=self.sv.settings})
+	self.network:sendToClients("client_onJankyUpdate",{Variable="settings",Value=self.sv.settings})
 	if args[2] then
 		self.network:sendToClient(args[3],"client_createSettings", { isBlock = true, open = true, play = true, explore = true })
 	end
@@ -265,7 +261,7 @@ function Game.server_load( self, args, player )
 				table.insert(self.sv.seekerqueue,plr)
 				table.remove(self.sv.seekerqueue,1)
 			end
-			self.network:setClientData({Variable="seekers",Value=self.sv.seekers})
+			self.network:sendToClients("client_onJankyUpdate",{Variable="seekers",Value=self.sv.seekers})
 		end
 	
 		-- Seekers --
@@ -312,7 +308,7 @@ function Game.server_load( self, args, player )
 	if args ~= false then
 		self:sv_start()
 		self.sv.gameRunning = false
-		self.network:setClientData({Variable="gameRunning",Value=self.sv.gameRunning})
+		self.network:sendToClients("client_onJankyUpdate",{Variable="gameRunning",Value=self.sv.gameRunning})
 	end
 end
 
@@ -326,13 +322,13 @@ function Game.server_setWorld( self, args, player )
 	if player and player.id ~= 1 then print(player:getName().. " Fired \"Game.server_setWorld!\"") return end
 	if args == "build" then
 		self.sv.seekers = {}
-		self.network:setClientData({Variable="seekers",Value=self.sv.seekers})
+		self.network:sendToClients("client_onJankyUpdate",{Variable="seekers",Value=self.sv.seekers})
 		self:sv_stop()
 		sm.game.setLimitedInventory(false)
 		self.sv.gameRunning = false
 		self.network:sendToClients("client_displayTimer","00:00:00")
 		self.sv.G_ChallengeStartTick = 0
-		self.network:setClientData({ {Variable="G_ChallengeStartTick",Value=self.sv.G_ChallengeStartTick}, {Variable="gameRunning",Value=self.sv.gameRunning} })
+		self.network:sendToClients("client_onJankyUpdate",{ {Variable="G_ChallengeStartTick",Value=self.sv.G_ChallengeStartTick}, {Variable="gameRunning",Value=self.sv.gameRunning} })
 		if self.sv.activeWorld ~= self.sv.saved.buildWorld then
 			self.sv.objectlist = {}
 			self.sv.activeWorld:destroy()
@@ -349,7 +345,7 @@ function Game.server_setWorld( self, args, player )
 			self.sv.activeWorld:destroy()
 		end
 		self.sv.activeWorld = sm.world.createWorld( "$CONTENT_DATA/Scripts/World.lua", "World", { world=self.sv.world, tiles=self.sv.tiles, play=true } )
-		self.network:setClientData({Variable="gameRunning",Value=self.sv.gameRunning})
+		self.network:sendToClients("client_onJankyUpdate",{Variable="gameRunning",Value=self.sv.gameRunning})
 	end
 end
 
@@ -372,7 +368,7 @@ function Game.server_onPlayerJoined( self, player, isNewPlayer )
 		else
 			self.sv.seekers[player.id] = {player,seeker=false}
 		end
-		self.network:setClientData({Variable="seekers",Value=self.sv.seekers})
+		self.network:sendToClients("client_onJankyUpdate",{Variable="seekers",Value=self.sv.seekers})
 		sm.event.sendToWorld(self.sv.activeWorld,"createCharacterOnSpawner",{players={player},uuid="b5858089-d1f8-4d13-a485-fdcb204d9c6b"})
 	else
 		self.sv.activeWorld:loadCell( 0, 0, player, "sv_createPlayerCharacter" )
@@ -380,14 +376,14 @@ function Game.server_onPlayerJoined( self, player, isNewPlayer )
 
 	table.insert(self.sv.seekerqueue,math.random(1,#self.sv.seekerqueue),player)
 
-	self.network:setClientData({ {Variable="G_ChallengeStartTick",Value=self.sv.G_ChallengeStartTick}, {Variable="score",Value=self.sv.score}, {Variable="gameRunning",Value=self.sv.gameRunning} })
+	self.network:sendToClients("client_onJankyUpdate",{ {Variable="G_ChallengeStartTick",Value=self.sv.G_ChallengeStartTick}, {Variable="score",Value=self.sv.score}, {Variable="gameRunning",Value=self.sv.gameRunning} })
 	
 end
 
 function Game.server_onPlayerLeft( self, player )
 	self.sv.score[player.id] = nil
 	table.remove(self.sv.seekerqueue,table.find(self.sv.seekerqueue,player))
-	self.network:setClientData({Variable="score",Value=self.sv.score})
+	self.network:sendToClients("client_onJankyUpdate",{Variable="score",Value=self.sv.score})
 end
 
 function Game.sv_createPlayerCharacter( self, world, x, y, player, params )
@@ -411,7 +407,7 @@ function Game.server_updateSettings(self,args, player)
 			sm.event.sendToInteractable(interactable,"server_setSettings",self.sv.settings)
 		end
 	end
-	self.network:setClientData({Variable="settings",Value=self.sv.settings})
+	self.network:sendToClients("client_onJankyUpdate",{Variable="settings",Value=self.sv.settings})
 end
 
 function Game.server_fly( self, params, player )
@@ -643,7 +639,7 @@ function Game.client_createEffect( self, args )
 	sm.event.sendToWorld(sm.localPlayer.getPlayer().character:getWorld(),"client_createEffect",args)
 end
 
-function Game:client_onClientDataUpdate( data, channel )
+function Game:client_onJankyUpdate( data, channel )
 	if data["Variable"] ~= nil and data["Value"] ~= nil then
 		self.cl[data["Variable"]] = data["Value"]
 	elseif type(data) == "table" and #data > 0 then
