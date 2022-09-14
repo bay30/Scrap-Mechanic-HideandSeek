@@ -28,7 +28,7 @@ function FireEvent(Name, Time)
     end
 end
 
-function Event(Name, Callback, Repeating, Time)
+function Event(Name, Callback, Repeating, Time, Id) -- Id is used if you wanna overwrite preexisting events.
     if type(Name) ~= "string" then assert(false, "EventName must be a string!") return end
     if type(Callback) ~= "function" then assert(false, "Callback must be a function!") return end
     if type(Repeating) ~= "boolean" then Repeating = false end
@@ -37,5 +37,15 @@ function Event(Name, Callback, Repeating, Time)
     if not Target[Name] then
         Target[Name] = {}
     end
-    table.insert(Target[Name], { Callback, Repeating, Time })
+    if Id and Target[Name] then
+        local i = 1
+        repeat
+            if Target[Name][i] and Target[Name][i][4] == Id then
+                table.remove(Target[Name],i)
+            else
+                i = i + 1
+            end
+        until i >= #Target[Name]
+    end
+    table.insert(Target[Name], { Callback, Repeating, Time, Id })
 end

@@ -15,7 +15,8 @@ World.cellMaxY = 6
 World.renderMode = "challenge"
 World.enableSurface = true
 
-function World.createCharacterOnSpawner(self, data)
+function World.createCharacterOnSpawner(self, data, player)
+	if not VaildateNetwork("World createCharacterOnSpawner",{player=player},{server=true,auth=true}) then return end
 	local playerSpawners = self.filteredinteractables[tostring(data.uuid or "")] or {}
 	print(playerSpawners)
 	for key, player in pairs(data.players or {}) do
@@ -48,8 +49,8 @@ table.find = function(tab, val)
 	return nil
 end
 
-function World.destructive(self, state)
-	print(state)
+function World.destructive(self, state, player)
+	if not VaildateNetwork("World destructive",{player=player},{server=true,auth=true}) then return end
 	for key, body in pairs(sm.body.getAllBodies()) do
 		if sm.exists(body) then
 			body.destructable = state
@@ -134,8 +135,9 @@ function World.server_celebrate(self)
 	self.network:sendToClients("client_celebrate")
 end
 
-function World:server_effect(...)
-	self.network:sendToClients("client_createEffect",...)
+function World:server_effect(args,player)
+	if not VaildateNetwork("World server_effect",{player=player},{server=true,auth=true}) then return end
+	self.network:sendToClients("client_createEffect",args)
 end
 
 function World.server_onCellLoaded(self, x, y)
@@ -178,6 +180,13 @@ function World.client_onCreate(self)
 		self.waterManager = WaterManager()
 	end
 	self.waterManager:cl_onCreate()
+	self.cl.beaconIconGui = sm.gui.createWorldIconGui( 44, 44, "$GAME_DATA/Gui/Layouts/Hud/Hud_BeaconIcon.layout", false )
+	self.cl.beaconIconGui:setItemIcon( "Icon", "BeaconIconMap", "BeaconIconMap", "0" )
+	self.cl.beaconIconGui:setColor( "Icon", sm.color.new(255,255,255) )
+	self.cl.beaconIconGui:setWorldPosition(sm.vec3.new(0,0,0))
+	self.cl.beaconIconGui:setRequireLineOfSight( false )
+	self.cl.beaconIconGui:setMaxRenderDistance(10000)
+	self.cl.beaconIconGui:open()
 end
 
 function World.client_onDestroy(self)
@@ -185,6 +194,7 @@ function World.client_onDestroy(self)
 end
 
 function World.client_destroyFloor(self)
+	if not VaildateNetwork("World client_destroyFloor",{},{server=false}) then return end
 	if self.floorEffect then
 		self.cl.floorEffect:destroy()
 		self.cl.floorEffect = nil
@@ -192,10 +202,12 @@ function World.client_destroyFloor(self)
 end
 
 function World.client_celebrate(self)
+	if not VaildateNetwork("World client_celebrate",{},{server=false}) then return end
 	sm.effect.playEffect("Horn", sm.vec3.new(0, 258, 162))
 end
 
 function World.client_createEffect(self, args)
+	if not VaildateNetwork("World client_createEffect",{},{server=false}) then return end
 	sm.effect.playEffect(args.name, args.pos or sm.camera.getPosition(), args.velocity or sm.vec3.new(0, 0, 0),
 		args.rot or sm.quat.identity(), args.scale or sm.vec3.new(1, 1, 1), args.parameter or {})
 end

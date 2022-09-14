@@ -41,21 +41,21 @@ function Main.server_onDestroy(self)
 end
 
 function Main:server_setValues(boolean,player)
-	if not VaildateNetwork("Main server_setValues",{player=player},{ServerOnly=true,Auth=true}) then return end
+	if not VaildateNetwork("Main server_setValues",{player=player},{server=true,auth=true}) then return end
 	sm.event.sendToGame("server_setValues", {self.sv.saved,boolean,player})
 end
 
 function Main:server_setSettings(values,player)
-	if not VaildateNetwork("Main server_setSettings",{player=player},{ServerOnly=true,Auth=true}) then return end
+	if not VaildateNetwork("Main server_setSettings",{player=player},{server=true,auth=true}) then return end
 	self.sv.saved.settings = values
 end
 
 function Main.server_save(self, args, player)
-	if not VaildateNetwork("Main server_save",{player=player},{ServerOnly=true,Auth=true}) then return end
+	if not VaildateNetwork("Main server_save",{player=player},{server=true,auth=true}) then return end
 	local CustomWorld
 	local CustomTiles
-	--CustomWorld = "$CONTENT_8b575391-5eb4-488e-980e-01352a88a1ad/world.world" -- Make sure your world and any custom tiles are include the blueprint $CONTENT_BLUEPRINTUUID/worldname.world (includes terrain)
-	--CustomTiles = {} -- Make sure the tiles are instead your blueprint $CONTENT_BLUEPRINTUUID/tilename.tile (these include no terrain)
+	--CustomWorld = "$CONTENT_UUID/world.world" -- Make sure your world and any custom tiles are include the blueprint $CONTENT_BLUEPRINTUUID/worldname.world (includes terrain)
+	--CustomTiles = {"$CONTENT_UUID/tile.tile"} -- Make sure the tiles are instead your blueprint $CONTENT_BLUEPRINTUUID/tilename.tile (these include no terrain)
 	self.sv.saved = self.sv.saved or {}
 
 	self.sv.saved.blueprints = {}
@@ -78,7 +78,7 @@ function Main.server_save(self, args, player)
 end
 
 function Main:server_load(args, player)
-	if not VaildateNetwork("Main server_load",{player=player},{ServerOnly=true,Auth=true}) then return end
+	if not VaildateNetwork("Main server_load",{player=player},{server=true,auth=true}) then return end
 	local ContentMissing = false
 	local String = "----[Content Verifyer]----\n"
 	for key, tile in pairs(self.sv.saved.tiles) do
@@ -109,19 +109,19 @@ function Main:server_load(args, player)
 end
 
 function Main.client_onInteract(self, character, state)
-	if not state or not sm.isHost then return end
+	if not state or not Authorised() then return end
 	self.network:sendToServer("server_setValues",true)
 	self.network:sendToServer("server_load")
 end
 
 function Main.client_onTinker(self, character, state)
-	if not state then return end
+	if not state or not Authorised() then return end
 	self.network:sendToServer("server_save")
-	return sm.isHost
+	return Authorised()
 end
 
 function Main.client_canInteract(self)
 	sm.gui.setInteractionText("", sm.gui.getKeyBinding("Use"), "Open Gui")
 	sm.gui.setInteractionText("", sm.gui.getKeyBinding("Tinker"), "Save")
-	return sm.isHost
+	return Authorised()
 end
