@@ -1,0 +1,10 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<MyGUI type="Layout" version="3.2.0">
+    <Widget type="Widget" skin="PanelEmpty" position_real="0.454688 0.419444 0.0895833 0.159259">
+        <Widget type="ImageBox" skin="ImageBox" position_real="0 0 1 1" name="Image">
+        </Widget>
+		<Widget type="ImageBox" skin="ImageBox" position_real="0.375 0.375 .25 .25" name="Image2">
+        </Widget>
+    </Widget>
+    <CodeGeneratorSettings/>
+</MyGUI>

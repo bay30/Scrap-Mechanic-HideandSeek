@@ -2,7 +2,7 @@ local Name = "[UtilsNetwork] "
 local Warnings = "[Warning] "
 local Errors = "[Error] "
 
-local AuthorisedIds = {[1] = true} -- Id 1 should always be host, if it isn't well. obviously something isn't right with the game.
+AuthorisedIds = {[1]=true} -- Id 1 should always be host, if it isn't well. obviously something isn't right with the game.
 
 local function FetchPlayerDetails(player)
 	if player and type(player) == "Player" then
@@ -23,19 +23,29 @@ function VaildateNetwork(LoggingName,Values,Statements) -- Returns true if vaild
 				return false
 			end
 		else
-			print(Name.. Errors.. LoggingName.. ", Cannot Authorise Without Player!",FetchPlayerDetails(Values.player))
-			return false
+			--print(Name.. Errors.. LoggingName.. ", Cannot Authorise Without Player!",FetchPlayerDetails(Values.player))
+			return true --[[ Player will be nil if server fires server function. ]]
 		end
 	end
     return true
 end
 
 function Authorise(id) -- This should be server only.
-	if not VaildateNetwork("UtilsNetwork",{},{ServerOnly=true}) then return end
+	if not VaildateNetwork("UtilsNetwork Authorise",{},{server=true}) then return end
 	AuthorisedIds[id] = true
 end
 
 function Unauthorise(id) -- This should be server only.
-	if not VaildateNetwork("UtilsNetwork",{},{ServerOnly=true}) then return end
+	if not VaildateNetwork("UtilsNetwork Unauthorise",{},{server=true}) then return end
 	AuthorisedIds[id] = nil
 end
+
+function Authorised() -- Client only unsure how localplayer works serverside.
+	return AuthorisedIds[sm.localPlayer.getPlayer().id] or false
+end
+
+--[[
+	TODO:
+	Sync authorised ids across clients so we can modify them during runtime
+	uhh unsure if i actually will tho, stuff is a proper pain.
+]]

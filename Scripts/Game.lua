@@ -16,6 +16,7 @@ Game = class( nil )
 Game.enableRestrictions = true
 
 function Game:createCharacterOnSpawner( player, playerSpawners, defaultPosition )
+	if not VaildateNetwork("Game createCharacterOnSpawner",{player=playerSpawners},{server=true,auth=true}) then return end
 	local spawnPosition = defaultPosition
 	local yaw = 0
 	local pitch = 0
@@ -30,7 +31,6 @@ function Game:createCharacterOnSpawner( player, playerSpawners, defaultPosition 
 end
 			
 function Game.server_onCreate( self )
-
 	g_unitManager = UnitManager()
 	g_unitManager:sv_onCreate()
 	
@@ -53,19 +53,21 @@ function Game.server_onCreate( self )
 	self.sv.countdownStarted = false
 	self.sv.gameRunning = true
 	self.sv.countdownTime = 0
-	sm.game.bindChatCommand("/return",{},"server_onCommand","Returns everyone to the build world.")
 
 end
 
 function Game:sv_hasStarted()
+	if not VaildateNetwork("Game sv_hasStarted",{},{server=true}) then return end
 	return self.sv.G_ChallengeStarted
 end
 
 function Game:cl_hasStarted()
+	if not VaildateNetwork("Game cl_hasStarted",{},{server=false}) then return end
 	return self.cl.G_ChallengeStarted
 end
 
-function Game:sv_start()
+function Game:sv_start(args,player)
+	if not VaildateNetwork("Game sv_start",{player=player},{server=true,auth=true}) then return end
 	if not self.sv.G_ChallengeStarted then
 
 		for key,plr in pairs(sm.player.getAllPlayers()) do
@@ -82,7 +84,8 @@ function Game:sv_start()
 	end
 end
 
-function Game:sv_stop()
+function Game:sv_stop(args,player)
+	if not VaildateNetwork("Game sv_start",{player=player},{server=true,auth=true}) then return end
 	if self.sv.G_ChallengeStarted then
 		self.sv.G_ChallengeStarted = false
 		self.network:sendToClients("client_onJankyUpdate", {Variable="G_ChallengeStarted",Value=self.sv.G_ChallengeStarted} )
@@ -90,7 +93,7 @@ function Game:sv_stop()
 end
 
 function Game.server_onFixedUpdate( self, delta )
-	FireEvent("Tick",sm.game.getCurrentTick()) 
+	FireEvent("Tick",sm.game.getCurrentTick())
 	g_unitManager:sv_onFixedUpdate()
 	if not self.sv.gameRunning then return end
 	local Hiders = 0
@@ -166,7 +169,8 @@ function Game.server_onFixedUpdate( self, delta )
 	end
 end
 
-function Game.server_onTag( self, args )
+function Game.server_onTag( self, args, player )
+	if not VaildateNetwork("Game server_onTag",{player=player},{server=true,auth=true}) then return end
 	if args["tagger"] and args["tagged"] and self.sv.activeWorld ~= self.sv.saved.buildWorld and self.sv.gameRunning then
 		if self.sv.seekers[args["tagger"].id] and self:sv_hasStarted() then
 			if not self.sv.seekers[args["tagged"].id] and self.sv.seekers[args["tagger"].id]["seeker"] then
@@ -195,13 +199,14 @@ function Game.server_onTag( self, args )
 end
 
 function Game.server_onTaunt( self, args, player )
+	if not VaildateNetwork("Game server_onTaunt",{player=player},{server=true}) then return end
 	if player.character then
 		self.network:sendToClients("client_createEffect",{name="Horn",pos=player.character:getWorldPosition()})
 	end
 end
 
 function Game:server_setValues( args, player )
-	if not VaildateNetwork("UtilsNetwork",{player=player},{ServerOnly=true,Auth=true}) then return end
+	if not VaildateNetwork("Game server_setValues",{player=player},{server=true,auth=true}) then return end
 	self.sv.settings = args[1].settings or {}
 	self.sv.tiles = args[1].tiles or {}
 	self.sv.world = args[1].world or ""
@@ -220,7 +225,8 @@ function Game.server_getTableLength( self, tab )
 	return a
 end
 
-function Game:reload_inventory()
+function Game:reload_inventory(args,player)
+	if not VaildateNetwork("Game reload_inventory",{player=player},{server=true,auth=true}) then return end
 	local Array = {}
 	if self.sv.settings.Hammer then
 		table.insert(Array,"09845ac0-4785-4ce8-98b3-0aa4a88c4bdd")
@@ -240,7 +246,7 @@ function Game:reload_inventory()
 end
 
 function Game.server_load( self, args, player )
-	if player and player.id ~= 1 then print(player:getName().. " Fired \"Game.server_load!\"") return end
+	if not VaildateNetwork("Game server_load",{player=player},{server=true,auth=true}) then return end
 	if args == false then
 
 		sm.game.setLimitedInventory(not self.sv.settings.Limited)
@@ -301,9 +307,12 @@ function Game.server_load( self, args, player )
 	end
 	Event("Tick",Blueprints,false,sm.game.getCurrentTick()+1)
 	
-	for key,plr in pairs(sm.player.getAllPlayers()) do
-		self.sv.activeWorld:loadCell( 0, 0, plr, "sv_createPlayerCharacter" )
+	local function SpawnPlayers()
+		for key,plr in pairs(sm.player.getAllPlayers()) do
+			self:sv_createPlayerCharacter( self.sv.activeWorld, 0, 0, plr )
+		end
 	end
+	Event("Tick",SpawnPlayers,false,sm.game.getCurrentTick()+1)
 	
 	if args ~= false then
 		self:sv_start()
@@ -312,14 +321,15 @@ function Game.server_load( self, args, player )
 	end
 end
 
-function Game.server_onCommand( self, args )
+function Game.server_onCommand( self, args, player )
+	if not VaildateNetwork("Game server_onCommand",{player=player},{server=true,auth=true}) then return end
 	if args[1] == "/return" then
 		self:server_setWorld("build")
 	end
 end
 
 function Game.server_setWorld( self, args, player )
-	if player and player.id ~= 1 then print(player:getName().. " Fired \"Game.server_setWorld!\"") return end
+	if not VaildateNetwork("Game server_setWorld",{player=player},{server=true,auth=true}) then return end
 	if args == "build" then
 		self.sv.seekers = {}
 		self.network:sendToClients("client_onJankyUpdate",{Variable="seekers",Value=self.sv.seekers})
@@ -335,7 +345,7 @@ function Game.server_setWorld( self, args, player )
 			self.sv.activeWorld = self.sv.saved.buildWorld
 		end
 		for key,plr in pairs(sm.player.getAllPlayers()) do
-			self.sv.activeWorld:loadCell( 0, 0, plr, "sv_createPlayerCharacter" )
+			self:sv_createPlayerCharacter( self.sv.activeWorld, 0, 0, plr )
 		end
 	elseif args == "play" then
 		self:sv_stop()
@@ -371,7 +381,7 @@ function Game.server_onPlayerJoined( self, player, isNewPlayer )
 		self.network:sendToClients("client_onJankyUpdate",{Variable="seekers",Value=self.sv.seekers})
 		sm.event.sendToWorld(self.sv.activeWorld,"createCharacterOnSpawner",{players={player},uuid="b5858089-d1f8-4d13-a485-fdcb204d9c6b"})
 	else
-		self.sv.activeWorld:loadCell( 0, 0, player, "sv_createPlayerCharacter" )
+		self:sv_createPlayerCharacter( self.sv.activeWorld, 0, 0, player )
 	end
 
 	table.insert(self.sv.seekerqueue,math.random(1,#self.sv.seekerqueue),player)
@@ -386,15 +396,15 @@ function Game.server_onPlayerLeft( self, player )
 	self.network:sendToClients("client_onJankyUpdate",{Variable="score",Value=self.sv.score})
 end
 
-function Game.sv_createPlayerCharacter( self, world, x, y, player, params )
-	if x and type(x) ~= "number" then print(player:getName().. " Fired \"Game.sv_createPlayerCharacter!\"") return end
+function Game.sv_createPlayerCharacter( self, world, x, y, player, params, handle )
+	if not VaildateNetwork("Game sv_createPlayerCharacter",{player=x},{server=true,auth=true}) then return end
 	local pos,pitch,yaw = self:createCharacterOnSpawner(player,self.sv.SpawnerList or {},sm.vec3.new( 2, 2, 20 ))
     local character = sm.character.createCharacter( player, world, pos, pitch,yaw )
 	player:setCharacter( character )
 end
 
 function Game.server_updateSettings(self,args, player)
-	if player and player.id ~= 1 then print(player:getName().. " Fired \"Game.server_updateSettings!\"") return end
+	if not VaildateNetwork("Game server_updateSettings",{player=player},{server=true,auth=true}) then return end
 	self.sv.settings[args["editbox"]] = args["value"]
 	if self.sv.activeWorld ~= self.sv.saved.buildWorld then
 		sm.game.setLimitedInventory(not self.sv.settings.Limited)
@@ -411,6 +421,7 @@ function Game.server_updateSettings(self,args, player)
 end
 
 function Game.server_fly( self, params, player )
+	if not VaildateNetwork("Game server_fly",{player=player},{server=true}) then return end
 	if player and player.character then
 		if not player.character:isSwimming() then
 			player.character.publicData.waterMovementSpeedFraction = 5
@@ -428,10 +439,12 @@ function Game.client_onLoadingScreenLifted( self )
 end
 
 function Game.client_displayAlert( self, text )
+	if not VaildateNetwork("Game client_displayAlert",{},{server=false}) then return end
 	sm.gui.displayAlertText(text)
 end
 
 function Game.client_displayTimer( self, text )
+	if not VaildateNetwork("Game client_displayTimer",{},{server=false}) then return end
 	if self:cl_hasStarted() and self.cl.gameRunning then
 		self.cl.gui["timer"]:setVisible("Time",true)
 		self.cl.gui["timer"]:setText("Time", text)
@@ -468,6 +481,7 @@ function Game.client_onCreate( self )
 	sm.game.bindChatCommand("/fly",{},"client_onCommand","Let's you fly around.")
 	if sm.isHost then
 		sm.game.bindChatCommand("/settings",{},"client_onCommand","Opens the settings menu.")
+		sm.game.bindChatCommand("/return",{},"client_onCommand","Returns everyone to the build world.")
 	end
 	
 	self.cl.gui = {}
@@ -475,7 +489,15 @@ function Game.client_onCreate( self )
 	self.cl.gui["timer"] = sm.gui.createChallengeHUDGui()
 	self.cl.gui["timer"]:open()
 	self.cl.gui["timer"]:setVisible("Time",false)
-	
+
+	self.cl.gui["pointer"] = sm.gui.createGuiFromLayout("$CONTENT_DATA/Gui/Layouts/Pointer.layout",true,{isHud=true,isInteractive=false})
+	self.cl.gui["pointer"]:setImage("Image2","$CONTENT_DATA/Gui/Pointer/Center.png")
+	self.cl.gui["pointer"]:setVisible("Image2",false)
+	self.cl.gui["pointer"]:open()
+
+end
+
+function Game:client_onRefresh()
 end
 
 function getTablePosition(tab,pos)
@@ -489,7 +511,19 @@ function getTablePosition(tab,pos)
 	return nil,nil
 end
 
+function CamCross(pos)
+	local dir = sm.camera.getDirection()
+	local dif = (sm.camera.getPosition()-pos)
+	if dif == sm.vec3.new(0,0,0) then
+		dif = sm.vec3.new(0,0,1)
+	end
+	local norm = dif:normalize()
+	return dir:cross( norm ), dir:dot( norm )
+end
+
 function Game.client_onFixedUpdate( self )
+	FireEvent("Tick",sm.game.getCurrentTick())
+	self.cl.timer = (self.cl.timer or 0) + 1
 	if self.cl.gui["score"] and self.cl.gui["score"]["gui"] and sm.exists(self.cl.gui["score"]["gui"]) then
 		for i = 1, 8 do
 			local plr,score = getTablePosition(self.cl.score,i)
@@ -548,6 +582,7 @@ function Game.client_onFixedUpdate( self )
 end
 
 function Game.client_makeGui(self,layout,val,data)
+	if not VaildateNetwork("Game client_makeGui",{},{server=false}) then return end
 	if self.cl.gui[val] then
 		self.cl.gui[val] = nil
 	end
@@ -556,6 +591,7 @@ function Game.client_makeGui(self,layout,val,data)
 end
 
 function Game.client_buttonGui(self,btn)
+	if not VaildateNetwork("Game client_buttonGui",{},{server=false}) then return end
 	if btn == "Play" then
 		self.network:sendToServer("server_load",false)
 	elseif btn == "Explore" then
@@ -567,6 +603,7 @@ function Game.client_buttonGui(self,btn)
 end
 
 function Game.client_createSettings( self, args )
+	if not VaildateNetwork("Game client_createSettings",{},{server=false}) then return end
 	local Gui = self:client_makeGui("$CONTENT_DATA/Gui/Layouts/HideAndSeekMenu.layout","settings")
 	Gui["gui"]:setTextChangedCallback("GameTime","client_settingsUpdate")
 	Gui["gui"]:setTextChangedCallback("HideTime","client_settingsUpdate")
@@ -596,7 +633,8 @@ function Game.client_createSettings( self, args )
 	return Gui
 end
 
-function Game.client_settingsUpdate( self, editbox, text )	
+function Game.client_settingsUpdate( self, editbox, text )
+	if not VaildateNetwork("Game client_settingsUpdate",{},{server=false}) then return end
 	local Result = tostring( tonumber(text) or self.cl.gui["settings"][editbox] or 0 )
 	self.cl.gui["settings"]["gui"]:setText(editbox,Result)
 	self.cl.gui["settings"][editbox] = Result
@@ -604,6 +642,7 @@ function Game.client_settingsUpdate( self, editbox, text )
 end
 
 function Game.client_settingsUpdate2( self, editbox2 )
+	if not VaildateNetwork("Game client_settingsUpdate2",{},{server=false}) then return end
 	local bool = false
 	local editbox = string.sub(editbox2,1,#editbox2-1)
 	if string.upper(string.sub(editbox2,#editbox2,#editbox2)) == "Y" then
@@ -615,7 +654,8 @@ function Game.client_settingsUpdate2( self, editbox2 )
 end
 
 function Game.client_onCommand( self, args )
-	if args[1] == "/settings" and sm.isHost then
+	if not VaildateNetwork("Game client_onCommand",{},{server=false}) then return end
+	if args[1] == "/settings" and Authorised() then
 		local Gui = self:client_createSettings({isBlock=false,stopgame=true})
 		Gui["gui"]:open()
 	elseif args[1] == "/score" then
@@ -628,18 +668,36 @@ function Game.client_onCommand( self, args )
 		Gui["gui"]:open()
 	elseif args[1] == "/fly" then
 		self.network:sendToServer("server_fly")
+	elseif Authorised() then
+		self.network:sendToServer("server_onCommand",args)
 	end
 end
 
 function Game.client_onTaunt( self, args )
+	if not VaildateNetwork("Game client_onTaunt",{},{server=false}) then return end
 	self.network:sendToServer("server_onTaunt",args)
 end
 
 function Game.client_createEffect( self, args )
+	if not VaildateNetwork("Game client_createEffect",{},{server=false}) then return end
 	sm.event.sendToWorld(sm.localPlayer.getPlayer().character:getWorld(),"client_createEffect",args)
+	if args.name == "Horn" then
+		local v, dot = CamCross(args.pos)
+		local val = math.floor( ((math.atan2(v.y,v.z)/math.pi) * 4)+.5 )
+		self.cl.pointerval = val
+		self.cl.gui["pointer"]:setImage("Image","$CONTENT_DATA/Gui/Pointer/".. val.. ".png")
+		self.cl.gui["pointer"]:setVisible("Image",true)
+		self.cl.gui["pointer"]:setVisible("Image2",dot > 0.25 and true or false)
+		local function Update()
+			self.cl.gui["pointer"]:setVisible("Image",false)
+			self.cl.gui["pointer"]:setVisible("Image2",false)
+		end
+		Event("Tick",Update,false,sm.game.getCurrentTick()+40,"tauntwait")
+	end
 end
 
 function Game:client_onJankyUpdate( data, channel )
+	if not VaildateNetwork("Game client_onJankyUpdate",{},{server=false}) then return end
 	if data["Variable"] ~= nil and data["Value"] ~= nil then
 		self.cl[data["Variable"]] = data["Value"]
 	elseif type(data) == "table" and #data > 0 then
