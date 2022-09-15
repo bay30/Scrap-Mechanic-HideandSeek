@@ -18,9 +18,8 @@ World.enableSurface = true
 function World.createCharacterOnSpawner(self, data, player)
 	if not VaildateNetwork("World createCharacterOnSpawner",{player=player},{server=true,auth=true}) then return end
 	local playerSpawners = self.filteredinteractables[tostring(data.uuid or "")] or {}
-	print(playerSpawners)
 	for key, player in pairs(data.players or {}) do
-		local spawnPosition = sm.vec3.new(0, 0, 100)
+		local spawnPosition = sm.vec3.new(2, 2, 20)
 		local yaw = 0
 		local pitch = 0
 		if #playerSpawners > 0 then
@@ -35,7 +34,8 @@ function World.createCharacterOnSpawner(self, data, player)
 			local character = sm.character.createCharacter(player, self.world, spawnPosition, yaw, pitch)
 			player:setCharacter(character)
 		else
-			print("not enough spawners")
+			local character = sm.character.createCharacter(player, self.world, spawnPosition, yaw, pitch)
+			player:setCharacter(character)
 		end
 	end
 end
@@ -142,6 +142,9 @@ end
 
 function World.server_onCellLoaded(self, x, y)
 	self.waterManager:sv_onCellReloaded(x, y)
+	if x == 0 and y == 0 then
+		FireEvent("WorldCenterLoaded",nil,self.world)
+	end
 end
 
 function World.server_onCellUnloaded(self, x, y)
@@ -180,13 +183,6 @@ function World.client_onCreate(self)
 		self.waterManager = WaterManager()
 	end
 	self.waterManager:cl_onCreate()
-	self.cl.beaconIconGui = sm.gui.createWorldIconGui( 44, 44, "$GAME_DATA/Gui/Layouts/Hud/Hud_BeaconIcon.layout", false )
-	self.cl.beaconIconGui:setItemIcon( "Icon", "BeaconIconMap", "BeaconIconMap", "0" )
-	self.cl.beaconIconGui:setColor( "Icon", sm.color.new(255,255,255) )
-	self.cl.beaconIconGui:setWorldPosition(sm.vec3.new(0,0,0))
-	self.cl.beaconIconGui:setRequireLineOfSight( false )
-	self.cl.beaconIconGui:setMaxRenderDistance(10000)
-	self.cl.beaconIconGui:open()
 end
 
 function World.client_onDestroy(self)
