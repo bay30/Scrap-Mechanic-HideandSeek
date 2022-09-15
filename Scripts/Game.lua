@@ -339,14 +339,12 @@ function Game.server_setWorld( self, args, player )
 		self.network:sendToClients("client_displayTimer","00:00:00")
 		self.sv.G_ChallengeStartTick = 0
 		self.network:sendToClients("client_onJankyUpdate",{ {Variable="G_ChallengeStartTick",Value=self.sv.G_ChallengeStartTick}, {Variable="gameRunning",Value=self.sv.gameRunning} })
-		if self.sv.activeWorld ~= self.sv.saved.buildWorld then
+		if self.sv.activeWorld.id ~= self.sv.saved.buildWorld.id then
 			self.sv.objectlist = {}
 			self.sv.activeWorld:destroy()
 			self.sv.activeWorld = self.sv.saved.buildWorld
 		end
-		for key,plr in pairs(sm.player.getAllPlayers()) do
-			self:sv_createPlayerCharacter( self.sv.activeWorld, 0, 0, plr )
-		end
+		sm.event.sendToWorld(self.sv.activeWorld,"createCharacterOnSpawner",{players=sm.player.getAllPlayers(),uuid="b5858089-b1f8-4d13-a485-fdaa204d9c6b"})
 	elseif args == "play" then
 		self:sv_stop()
 		self.sv.gameRunning = true
@@ -379,9 +377,12 @@ function Game.server_onPlayerJoined( self, player, isNewPlayer )
 			self.sv.seekers[player.id] = {player,seeker=false}
 		end
 		self.network:sendToClients("client_onJankyUpdate",{Variable="seekers",Value=self.sv.seekers})
-		sm.event.sendToWorld(self.sv.activeWorld,"createCharacterOnSpawner",{players={player},uuid="b5858089-d1f8-4d13-a485-fdcb204d9c6b"})
-	else
-		self:sv_createPlayerCharacter( self.sv.activeWorld, 0, 0, player )
+	end
+	if isNewPlayer then
+		local function Spawn()
+			sm.event.sendToWorld(self.sv.activeWorld,"createCharacterOnSpawner",{players={player},uuid="b5858089-d1f8-4d13-a485-fdcb204d9c6b"})
+		end
+		Event("Tick",Spawn,false,sm.game.getCurrentTick()+1)
 	end
 
 	table.insert(self.sv.seekerqueue,math.random(1,#self.sv.seekerqueue),player)
