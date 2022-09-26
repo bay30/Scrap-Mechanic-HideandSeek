@@ -20,7 +20,7 @@ function Main.server_onCreate(self)
 		self.sv.saved.tiles = { "$CONTENT_DATA/Terrain/Tiles/challengemode_env_DT.tile",
 			"$CONTENT_DATA/Terrain/Tiles/ChallengeBuilderDefault.tile" } -- Array of tiles {"$CONTENT_UUID/TILENAME.tile"} (requires them to install tile btw)
 		self.sv.saved.world = "" -- Point to world "$CONTENT_UUID/WORLDNAME.world" (requires them to install world)
-		self.sv.saved.settings = { Hammer = true }
+		self.sv.saved.settings = { Hammer = true, Spudgun = true, Nametag = true, Destruction = true }
 		self.sv.saved.blueprints = {}
 		self.storage:save(self.sv.saved)
 	end
