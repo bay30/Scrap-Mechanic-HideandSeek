@@ -70,6 +70,10 @@ function World.server_onCreate(self)
 	self.filteredinteractables = {}
 end
 
+function World:server_onAnnoyed()
+	print("te")
+end
+
 function World.server_onFixedUpdate(self)
 	ChallengeBaseWorld.server_onFixedUpdate(self)
 	self.waterManager:sv_onFixedUpdate()

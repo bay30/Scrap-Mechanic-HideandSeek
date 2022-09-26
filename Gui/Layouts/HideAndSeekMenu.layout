@@ -48,6 +48,12 @@
                 <Property key="TextAlign" value="Center"/>
                 <Property key="FontName" value="SM_Button"/>
             </Widget>
+            <Widget type="Button" skin="SettingsButton" position_real="0.842014 0.686728 0.0607639 0.0925926" name="NametagY">
+                <Property key="StateSelected" value="false"/>
+                <Property key="Caption" value="YES"/>
+                <Property key="TextAlign" value="Center"/>
+                <Property key="FontName" value="SM_Button"/>
+            </Widget>
             <Widget type="Button" skin="ButtonPlay" position_real="0.850694 0.871914 0.121528 0.0817901" name="Play"/>
             <Widget type="Button" skin="SettingsButton" position_real="0.368924 0.686728 0.0607639 0.0925926" name="PickSeekersY">
                 <Property key="Caption" value="YES"/>
@@ -65,6 +71,12 @@
                 <Property key="FontName" value="SM_Text"/>
                 <Property key="TextAlign" value="Right VCenter"/>
                 <Property key="Caption" value="Spudgun"/>
+            </Widget>
+            <Widget type="TextBox" skin="TextBox" position_real="0.542535 0.686728 0.286458 0.0771605">
+                <Property key="FontHeight" value="24"/>
+                <Property key="FontName" value="SM_Text"/>
+                <Property key="TextAlign" value="Right VCenter"/>
+                <Property key="Caption" value="Hider Nametags"/>
             </Widget>
             <Widget type="TextBox" skin="TextBox" position_real="0.542535 0.493827 0.286458 0.0771605">
                 <Property key="FontHeight" value="24"/>
@@ -172,6 +184,11 @@
                 <Property key="FontName" value="SM_ButtonSmall"/>
             </Widget>
             <Widget type="Button" skin="SettingsButton" position_real="0.902778 0.594136 0.0607639 0.0925926" name="SpudgunN">
+                <Property key="Caption" value="NO"/>
+                <Property key="FontName" value="SM_Button"/>
+                <Property key="TextAlign" value="Center"/>
+            </Widget>
+            <Widget type="Button" skin="SettingsButton" position_real="0.902778 0.686728 0.0607639 0.0925926" name="NametagN">
                 <Property key="Caption" value="NO"/>
                 <Property key="FontName" value="SM_Button"/>
                 <Property key="TextAlign" value="Center"/>

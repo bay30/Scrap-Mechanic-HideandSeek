@@ -66,30 +66,103 @@ function Game:cl_hasStarted()
 	return self.cl.G_ChallengeStarted
 end
 
-function Game:sv_start(args,player)
-	if not VaildateNetwork("Game sv_start",{player=player},{server=true,auth=true}) then return end
-	if not self.sv.G_ChallengeStarted then
+function Game:sv_prestart(args, player)
+	if not VaildateNetwork("Game sv_start", { player = player }, { server = true, auth = true }) or self.sv.countdownStarted
+		or self.sv.activeWorld == self.sv.saved.buildWorld then return end
+	self.sv.countdownStarted = true
+	self.sv.countdownTime = sm.game.getCurrentTick()
 
-		for key,plr in pairs(sm.player.getAllPlayers()) do
-			self.sv.score[plr.id] = {plr=plr,tags=0}
-			if self.sv.seekers[plr.id] then
-				self.sv.score[plr.id].hidetime = sm.game.getCurrentTick()
-			end
+	if self.sv.settings.PickSeekers == nil or self.sv.settings.PickSeekers == false then
+		local Selection = sm.player.getAllPlayers()
+		local Seekers = 1
+		if self.sv.settings.Seekers and #self.sv.settings.Seekers <= #Selection then
+			Seekers = self.sv.settings.Seekers
 		end
 
-		self.sv.G_ChallengeStarted = true
-		self.sv.G_ChallengeStartTick = sm.game.getCurrentTick()
-		self.network:sendToClients("client_onJankyUpdate", {{Variable="G_ChallengeStarted",Value=self.sv.G_ChallengeStarted}, {Variable="G_ChallengeStartTick",Value=self.sv.G_ChallengeStartTick},{Variable="score",Value=self.sv.score}} )
+		self.sv.seekers = {}
 
+		for i = 1, Seekers do
+			local plr = self.sv.seekerqueue[1]
+			self.sv.seekers[plr.id] = { plr, seeker = true }
+			table.insert(self.sv.seekerqueue, plr)
+			table.remove(self.sv.seekerqueue, 1)
+		end
+		self.network:sendToClients("client_onJankyUpdate", { Variable = "seekers", Value = self.sv.seekers })
 	end
+
+	for key, plr in pairs(sm.player.getAllPlayers()) do
+		if plr.character then
+			if self.sv.seekers[plr.id] == nil then
+				sm.event.sendToWorld(self.sv.activeWorld, "createCharacterOnSpawner",
+					{ players = { plr }, uuid = "b5858089-b1f8-4d13-a485-fdcb204d9c6b" }) -- Hider Spawn
+			else
+				sm.event.sendToWorld(self.sv.activeWorld, "createCharacterOnSpawner",
+					{ players = { plr }, uuid = "b5858089-b1f8-4d13-a485-fdaa204d9c6b" }) -- Spectator Spawn
+			end
+		end
+	end
+
+	sm.event.sendToWorld(self.sv.activeWorld, "destructive", self.sv.settings.Destruction)
 end
 
-function Game:sv_stop(args,player)
-	if not VaildateNetwork("Game sv_start",{player=player},{server=true,auth=true}) then return end
-	if self.sv.G_ChallengeStarted then
-		self.sv.G_ChallengeStarted = false
-		self.network:sendToClients("client_onJankyUpdate", {Variable="G_ChallengeStarted",Value=self.sv.G_ChallengeStarted} )
+
+function Game:sv_start(args, player)
+	if not VaildateNetwork("Game sv_start", { player = player }, { server = true, auth = true }) or
+		self.sv.G_ChallengeStarted or self.sv.activeWorld == self.sv.saved.buildWorld then return end
+
+	for key, plr in pairs(sm.player.getAllPlayers()) do
+		local character = plr:getCharacter()
+		self.sv.score[plr.id] = { plr = plr, tags = 0 }
+		if self.sv.seekers[plr.id] then
+			self.sv.score[plr.id].hidetime = sm.game.getCurrentTick()
+		elseif character then
+			character.publicData.waterMovementSpeedFraction = .75
+		end
 	end
+
+	self.sv.gameRunning = true
+	self.sv.G_ChallengeStarted = true
+	self.sv.G_ChallengeStartTick = sm.game.getCurrentTick()
+	self.network:sendToClients("client_onJankyUpdate",
+		{ { Variable = "G_ChallengeStarted", Value = self.sv.G_ChallengeStarted },
+			{ Variable = "G_ChallengeStartTick", Value = self.sv.G_ChallengeStartTick },
+			{ Variable = "score", Value = self.sv.score }, { Variable = "gameRunning", Value = self.sv.gameRunning } })
+end
+
+
+function Game:sv_stop(args, player)
+	if not VaildateNetwork("Game sv_start", { player = player }, { server = true, auth = true }) or
+		not self.sv.G_ChallengeStarted or self.sv.activeWorld == self.sv.saved.buildWorld then return end
+
+	self.sv.gameRunning = false
+	self.sv.G_ChallengeStarted = false
+	self.sv.countdownStarted = false
+	Event("Tick", function() self.sv.gameRunning = true end, false, sm.game.getCurrentTick() + 2)
+	
+	for key, plr in pairs(sm.player.getAllPlayers()) do
+		local character = plr:getCharacter()
+		if self.sv.seekers[plr.id] == nil then
+			self.sv.score[plr.id].hidetime = sm.game.getCurrentTick()
+		end
+		if character then
+			character.publicData.waterMovementSpeedFraction = 1
+		end
+	end
+
+	if self.sv.objectlist.starters then
+		for key, obj in pairs(self.sv.objectlist.starters) do
+			if sm.exists(obj) then
+				obj.interactable.active = false
+			end
+		end
+	end
+
+	self.network:sendToClients("client_onJankyUpdate",
+		{ { Variable = "score", Value = self.sv.score }, { Variable = "gameRunning", Value = self.sv.gameRunning },
+			{ Variable = "G_ChallengeStarted", Value = self.sv.G_ChallengeStarted } })
+	self.network:sendToClients("client_displayAlert", "Game over!")
+	sm.event.sendToWorld(self.sv.activeWorld, "server_celebrate")
+
 end
 
 function Game.server_onFixedUpdate( self, delta )
@@ -105,20 +178,8 @@ function Game.server_onFixedUpdate( self, delta )
 	if self.sv.objectlist.starters then
 		for key,obj in pairs(self.sv.objectlist.starters) do
 			if sm.exists(obj) then
-				if obj.interactable.active and not self.sv.countdownStarted then
-					self.sv.countdownStarted = true
-					self.sv.countdownTime = sm.game.getCurrentTick()
-
-					for key,plr in pairs(sm.player.getAllPlayers()) do
-						if plr.character then
-							if self.sv.seekers[plr.id] == nil then
-								sm.event.sendToWorld(self.sv.activeWorld,"createCharacterOnSpawner",{players={plr},uuid="b5858089-b1f8-4d13-a485-fdcb204d9c6b"})
-							end
-						end
-					end
-					
-					sm.event.sendToWorld(self.sv.activeWorld,"destructive",self.sv.settings.Destruction)
-					
+				if obj.interactable.active then
+					self:sv_prestart()
 				end
 			end
 		end
@@ -126,7 +187,7 @@ function Game.server_onFixedUpdate( self, delta )
 	if self.sv.activeWorld ~= self.sv.saved.buildWorld then
 		local CountdownNumber = self.sv.countdownTime + (tonumber(self.sv.settings.HideTime) or 60) * 40 - sm.game.getCurrentTick()
 		if self.sv.countdownStarted and CountdownNumber > 0 then
-			local seconds = CountdownNumber/40
+			local seconds = CountdownNumber/40 + 1
 			local minutes = seconds/60
 			local hours = minutes/60
 			self.network:sendToClients("client_displayAlert",string.format( "%02i:%02i:%02i", hours%60, minutes%60, seconds%60 ))
@@ -149,54 +210,51 @@ function Game.server_onFixedUpdate( self, delta )
 		local hours = minutes/60
 		self.network:sendToClients("client_displayTimer",string.format( "%02i:%02i:%02i", hours%60, minutes%60, seconds%60 ))
 		if seconds <= 0 then
-			self.sv.gameRunning = false
-			for key,plr in pairs(sm.player.getAllPlayers()) do
-				if self.sv.seekers[plr.id] == nil then
-					self.sv.score[plr.id].hidetime = sm.game.getCurrentTick()
-				end
-			end
-			self.network:sendToClients("client_onJankyUpdate",{{ Variable="score",Value=self.sv.score },{ Variable="gameRunning",Value=self.sv.gameRunning}})
-			self.network:sendToClients("client_displayTimer","00:00:00")
-			self.network:sendToClients("client_displayAlert","Game over!")
-			sm.event.sendToWorld(self.sv.activeWorld,"server_celebrate")
+			self:sv_stop()
 		end
 	elseif self:sv_hasStarted() and Hiders < 1 then
-		self.sv.gameRunning = false
-		self.network:sendToClients("client_displayTimer","00:00:00")
-		self.network:sendToClients("client_displayAlert","Game over!")
-		sm.event.sendToWorld(self.sv.activeWorld,"server_celebrate")
-		self.network:sendToClients("client_onJankyUpdate",{Variable="gameRunning",Value=self.sv.gameRunning})
+		self:sv_stop()
 	end
 end
 
-function Game.server_onTag( self, args, player )
-	if not VaildateNetwork("Game server_onTag",{player=player},{server=true,auth=true}) then return end
+function Game.server_onTag(self, args, player)
+	if not VaildateNetwork("Game server_onTag", { player = player }, { server = true, auth = true }) then return end
 	if args["tagger"] and args["tagged"] and self.sv.activeWorld ~= self.sv.saved.buildWorld and self.sv.gameRunning then
 		if self.sv.seekers[args["tagger"].id] and self:sv_hasStarted() then
 			if not self.sv.seekers[args["tagged"].id] and self.sv.seekers[args["tagger"].id]["seeker"] then
 				if self.sv.BecomeSeekers then
-					self.sv.seekers[args["tagged"].id] = {args["tagged"],seeker=true}
+					self.sv.seekers[args["tagged"].id] = { args["tagged"], seeker = true }
 				else
-					self.sv.seekers[args["tagged"].id] = {args["tagged"],seeker=false}
+					self.sv.seekers[args["tagged"].id] = { args["tagged"], seeker = false }
+				end
+				local character = args["tagged"]:getCharacter()
+				if character then
+					character.publicData.waterMovementSpeedFraction = 1
 				end
 				self.sv.score[args["tagger"].id].tags = self.sv.score[args["tagger"].id].tags + 1
 				self.sv.score[args["tagged"].id].hidetime = sm.game.getCurrentTick()
-				self.network:sendToClients("client_onJankyUpdate",{ {Variable="seekers",Value=self.sv.seekers}, {Variable="score",Value=self.sv.score} })
-				sm.event.sendToWorld(self.sv.activeWorld,"server_effect",{name="Woc - Destruct",pos=args["tagged"].character.worldPosition})
+				self.network:sendToClients("client_onJankyUpdate",
+					{ { Variable = "seekers", Value = self.sv.seekers }, { Variable = "score", Value = self.sv.score } })
+				sm.event.sendToWorld(self.sv.activeWorld, "server_effect",
+					{ name = "Woc - Destruct", pos = args["tagged"].character.worldPosition })
 			end
-		elseif args["tagger"].id == 1 and self.sv.settings.PickSeekers and not self:sv_hasStarted() and not self.sv.countdownStarted then
+		elseif args["tagger"].id == 1 and self.sv.settings.PickSeekers and not self:sv_hasStarted() and
+			not self.sv.countdownStarted then
 			if self.sv.seekers[args["tagged"].id] then
 				self.sv.seekers[args["tagged"].id] = nil
 				self.sv.score[args["tagged"].id].hidetime = nil
-				self.network:sendToClients("client_onJankyUpdate",{ {Variable="seekers",Value=self.sv.seekers}, {Variable="score",Value=self.sv.score} })
+				self.network:sendToClients("client_onJankyUpdate",
+					{ { Variable = "seekers", Value = self.sv.seekers }, { Variable = "score", Value = self.sv.score } })
 			else
-				self.sv.seekers[args["tagged"].id] = {args["tagged"],seeker=true}
+				self.sv.seekers[args["tagged"].id] = { args["tagged"], seeker = true }
 				self.sv.score[args["tagged"].id].hidetime = nil
-				self.network:sendToClients("client_onJankyUpdate",{ {Variable="seekers",Value=self.sv.seekers}, {Variable="score",Value=self.sv.score} })
+				self.network:sendToClients("client_onJankyUpdate",
+					{ { Variable = "seekers", Value = self.sv.seekers }, { Variable = "score", Value = self.sv.score } })
 			end
 		end
 	end
 end
+
 
 function Game.server_onTaunt( self, args, player )
 	if not VaildateNetwork("Game server_onTaunt",{player=player},{server=true}) then return end
@@ -252,26 +310,6 @@ function Game.server_load( self, args, player )
 		sm.game.setLimitedInventory(not self.sv.settings.Limited)
 		self.sv.countdownStarted = false
 	
-		-- Seekers --
-	
-		if self.sv.settings.PickSeekers == nil or self.sv.settings.PickSeekers == false then
-			local Selection = sm.player.getAllPlayers()
-			local Seekers = 1
-			if self.sv.settings.Seekers and #self.sv.settings.Seekers <= #Selection then
-				Seekers = self.sv.settings.Seekers
-			end
-			
-			for i = 1, Seekers do
-				local plr = self.sv.seekerqueue[1]
-				self.sv.seekers[plr.id] = {plr,seeker=true}
-				table.insert(self.sv.seekerqueue,plr)
-				table.remove(self.sv.seekerqueue,1)
-			end
-			self.network:sendToClients("client_onJankyUpdate",{Variable="seekers",Value=self.sv.seekers})
-		end
-	
-		-- Seekers --
-	
 		-- Inv --
 		self:reload_inventory()
 		-- Inv --
@@ -325,6 +363,10 @@ function Game.server_onCommand( self, args, player )
 	if not VaildateNetwork("Game server_onCommand",{player=player},{server=true,auth=true}) then return end
 	if args[1] == "/return" then
 		self:server_setWorld("build")
+	elseif args[1] == "/start" then
+		self:sv_prestart()
+	elseif args[1] == "/stop" then
+		self:sv_stop( args, player )
 	end
 end
 
@@ -348,7 +390,7 @@ function Game.server_setWorld( self, args, player )
 	elseif args == "play" then
 		self:sv_stop()
 		self.sv.gameRunning = true
-		if self.sv.activeWorld ~= self.sv.saved.buildWorld then
+		if self.sv.activeWorld.id ~= self.sv.saved.buildWorld.id then
 			self.sv.objectlist = {}
 			self.sv.activeWorld:destroy()
 		end
@@ -380,7 +422,7 @@ function Game.server_onPlayerJoined( self, player, isNewPlayer )
 	end
 	if isNewPlayer then
 		local function Spawn()
-			sm.event.sendToWorld(self.sv.activeWorld,"createCharacterOnSpawner",{players={player},uuid="b5858089-d1f8-4d13-a485-fdcb204d9c6b"})
+			sm.event.sendToWorld(self.sv.activeWorld,"createCharacterOnSpawner",{players={player},uuid="b5858089-b1f8-4d13-a485-fdaa204d9c6b"})
 		end
 		Event("Tick",Spawn,false,sm.game.getCurrentTick()+1)
 	end
@@ -423,7 +465,7 @@ end
 
 function Game.server_fly( self, params, player )
 	if not VaildateNetwork("Game server_fly",{player=player},{server=true}) then return end
-	if player and player.character then
+	if player and player.character and player.character:getWorld() == self.sv.saved.buildWorld then
 		if not player.character:isSwimming() then
 			player.character.publicData.waterMovementSpeedFraction = 5
 		else
@@ -483,6 +525,8 @@ function Game.client_onCreate( self )
 	if sm.isHost then
 		sm.game.bindChatCommand("/settings",{},"client_onCommand","Opens the settings menu.")
 		sm.game.bindChatCommand("/return",{},"client_onCommand","Returns everyone to the build world.")
+		sm.game.bindChatCommand("/start",{},"client_onCommand","Start's the game.")
+		sm.game.bindChatCommand("/stop",{},"client_onCommand","Stops the game.")
 	end
 	
 	self.cl.gui = {}
@@ -563,7 +607,7 @@ function Game.client_onFixedUpdate( self )
 	if Player and Player.character then
 		for key,plr in pairs(sm.player.getAllPlayers()) do
 			if plr.character then
-				if not AmSeeker or self.cl.seekers[plr.id] then
+				if not AmSeeker and self.cl.settings.Nametag or self.cl.seekers[plr.id] then
 					local Distance = math.floor((plr.character:getWorldPosition()-Player.character:getWorldPosition()):length2())
 					local Color = sm.color.new(1,1,1)
 					if self.cl.seekers[plr.id] then
@@ -612,7 +656,7 @@ function Game.client_createSettings( self, args )
 	Gui["gui"]:setText("HideTime",self.cl.settings.HideTime or "60")
 	Gui["gui"]:setText("GameTime",self.cl.settings.GameTime or "0")
 	Gui["gui"]:setText("Seekers",self.cl.settings.Seekers or "1")
-	local buttons = {"BecomeSeekers","PickSeekers","Limited","Destruction","Hammer","Spudgun"}
+	local buttons = {"BecomeSeekers","PickSeekers","Limited","Destruction","Hammer","Spudgun","Nametag"}
 	for _,obj in pairs(buttons) do
 		Gui["gui"]:setButtonCallback(obj.."Y","client_settingsUpdate2")
 		Gui["gui"]:setButtonCallback(obj.."N","client_settingsUpdate2")
