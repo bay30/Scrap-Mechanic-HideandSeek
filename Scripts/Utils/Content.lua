@@ -10,7 +10,7 @@ for i, v in ipairs(Config.dependencies or {}) do
                 local id = "$CONTENT_".. v.localId.. "/".. map.uuid
                 local desc = map
                 if desc then
-                    table.insert(Maps, 1, {desc,id,v.localId})
+                    table.insert(Maps, 1, {desc,id,v})
                 end
             end
         end

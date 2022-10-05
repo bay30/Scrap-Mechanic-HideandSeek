@@ -326,7 +326,7 @@ function Game.server_load( self, args, player )
 	local function Blueprints()
 		for key,creation in pairs(self.sv.blueprints or {}) do
 			local creation = sm.creation.importFromString( self.sv.activeWorld, creation, sm.vec3.zero(), sm.quat.identity(), true )
-			for _,body in ipairs(creation) do
+			for _,body in ipairs(creation or {}) do
 				body.erasable = false
 				body.buildable = false
 				body.usable = false
@@ -384,7 +384,7 @@ function Game.server_onCommand( self, args, player )
 				local strang = item
 				local a1,a2 = string.find(item,"$CONTENT_DATA")
 				if a1 and a2 then
-					strang = "$CONTENT_".. map[3].. string.sub(strang,a2+1,#strang)
+					strang = "$CONTENT_".. map[3].localId.. string.sub(strang,a2+1,#strang)
 				end
 				table.insert(blueprints,sm.json.writeJsonString(sm.json.open(strang)))
 			end
@@ -392,11 +392,12 @@ function Game.server_onCommand( self, args, player )
 				local strang = item
 				local a1,a2 = string.find(item,"$CONTENT_DATA")
 				if a1 and a2 then
-					strang = "$CONTENT_".. map[3].. string.sub(strang,a2+1,#strang)
+					strang = "$CONTENT_".. map[3].localId.. string.sub(strang,a2+1,#strang)
 				end
 				table.insert(tiles,strang)
 			end
 			table.insert(tiles,"$CONTENT_DATA/Terrain/Tiles/challengemode_env_DT.tile")
+			sm.gui.chatMessage("\nMap Link: https://steamcommunity.com/workshop/filedetails/\n?id=".. map[3].fileId.. "\n\nMap Makers: ".. map[3].credits.usernames.. "\n")
 			self:server_setValues({{blueprints=blueprints,tiles=tiles},true,player})
 		end
 	end
