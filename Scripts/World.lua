@@ -18,25 +18,30 @@ World.enableSurface = true
 function World.createCharacterOnSpawner(self, data, player)
 	if not VaildateNetwork("World createCharacterOnSpawner",{player=player},{server=true,auth=true}) then return end
 	local playerSpawners = self.filteredinteractables[tostring(data.uuid or "")] or {}
+	if next(playerSpawners) == nil then
+		playerSpawners = self.filteredinteractables["b5858089-b1f8-4d13-a485-fdaa204d9c6b"] or {}
+	end
 	for key, player in pairs(data.players or {}) do
 		local spawnPosition = sm.vec3.new(2, 2, 20)
 		local yaw = 0
 		local pitch = 0
-		if #playerSpawners > 0 then
-			local spawnerIndex = ((player.id - 1) % #playerSpawners) + 1
-			local spawner = playerSpawners[spawnerIndex]
-			spawnPosition = spawner.shape.worldPosition + spawner.shape:getAt() * 0.825
+		local spawnerIndex = ((player.id - 1) % #playerSpawners) + 1
+		local spawner = playerSpawners[spawnerIndex]
+		spawnPosition = spawner and spawner.shape.worldPosition + spawner.shape:getAt() * 0.825 or spawnPosition
 
-			local spawnDirection = -spawner.shape:getUp()
-			pitch = math.asin(spawnDirection.z)
-			yaw = math.atan2(spawnDirection.x, -spawnDirection.y)
+		local spawnDirection = spawer and -spawner.shape:getUp() or sm.vec3.new(0,0,0)
+		pitch = math.asin(spawnDirection.z)
+		yaw = math.atan2(spawnDirection.x, -spawnDirection.y)
 
-			local character = sm.character.createCharacter(player, self.world, spawnPosition, yaw, pitch)
-			player:setCharacter(character)
-		else
-			local character = sm.character.createCharacter(player, self.world, spawnPosition, yaw, pitch)
-			player:setCharacter(character)
+		local character = sm.character.createCharacter(player, self.world, spawnPosition, yaw, pitch)
+		player:setCharacter(character)
+
+		if data.speedmodifyer then
+			Event("Tick",function ()
+				character.publicData.waterMovementSpeedFraction = data.speedmodifyer
+			end, false, sm.game.getCurrentTick()+1)
 		end
+
 	end
 end
 

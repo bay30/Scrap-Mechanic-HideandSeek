@@ -6,7 +6,8 @@ dofile( "$SURVIVAL_DATA/Scripts/game/survival_meleeattacks.lua" )
 dofile( "$SURVIVAL_DATA/Scripts/game/managers/EffectManager.lua" )
 dofile( "$SURVIVAL_DATA/Scripts/game/managers/UnitManager.lua" )
 dofile( "$CONTENT_DATA/Scripts/Utils/Events.lua" )
-dofile("$CONTENT_DATA/Scripts/Utils/Network.lua")
+dofile( "$CONTENT_DATA/Scripts/Utils/Network.lua")
+dofile( "$CONTENT_DATA/Scripts/Utils/Content.lua" )
 
 ---@class Game : GameClass
 ---@field sv table
@@ -97,7 +98,7 @@ function Game:sv_prestart(args, player)
 					{ players = { plr }, uuid = "b5858089-b1f8-4d13-a485-fdcb204d9c6b" }) -- Hider Spawn
 			else
 				sm.event.sendToWorld(self.sv.activeWorld, "createCharacterOnSpawner",
-					{ players = { plr }, uuid = "b5858089-b1f8-4d13-a485-fdaa204d9c6b" }) -- Spectator Spawn
+					{ players = { plr }, uuid = "b5858089-b1f8-4d13-a485-fdaa204d9c6b", speedmodifyer = 0 }) -- Spectator Spawn
 			end
 		end
 	end
@@ -266,7 +267,8 @@ end
 function Game:server_setValues( args, player )
 	if not VaildateNetwork("Game server_setValues",{player=player},{server=true,auth=true}) then return end
 	self.sv.settings = args[1].settings or {}
-	self.sv.tiles = args[1].tiles or {}
+	self.sv.tiles = args[1].tiles or { "$CONTENT_DATA/Terrain/Tiles/challengemode_env_DT.tile",
+	"$CONTENT_DATA/Terrain/Tiles/ChallengeBuilderDefault.tile" }
 	self.sv.world = args[1].world or ""
 	self.sv.blueprints = args[1].blueprints or {}
 	self.network:sendToClients("client_onJankyUpdate",{Variable="settings",Value=self.sv.settings})
@@ -367,6 +369,36 @@ function Game.server_onCommand( self, args, player )
 		self:sv_prestart()
 	elseif args[1] == "/stop" then
 		self:sv_stop( args, player )
+	elseif args[1] == "/map" then
+		local map
+		for i,v in ipairs(Maps) do
+			if string.sub(v[1].name,1,#args[2]) == args[2] or i == tonumber(args[2]) then
+				map = v
+				break
+			end
+		end
+		if map then
+			local blueprints = {}
+			local tiles = {}
+			for _,item in ipairs(map[1].data.levelCreations) do
+				local strang = item
+				local a1,a2 = string.find(item,"$CONTENT_DATA")
+				if a1 and a2 then
+					strang = "$CONTENT_".. map[3].. string.sub(strang,a2+1,#strang)
+				end
+				table.insert(blueprints,sm.json.writeJsonString(sm.json.open(strang)))
+			end
+			for _,item in ipairs(map[1].data.tiles) do
+				local strang = item
+				local a1,a2 = string.find(item,"$CONTENT_DATA")
+				if a1 and a2 then
+					strang = "$CONTENT_".. map[3].. string.sub(strang,a2+1,#strang)
+				end
+				table.insert(tiles,strang)
+			end
+			table.insert(tiles,"$CONTENT_DATA/Terrain/Tiles/challengemode_env_DT.tile")
+			self:server_setValues({{blueprints=blueprints,tiles=tiles},true,player})
+		end
 	end
 end
 
@@ -407,7 +439,7 @@ function Game.server_onPlayerJoined( self, player, isNewPlayer )
     end
 	
 	if player.id == 1 then
-		sm.gui.chatMessage("[------------------------]\nWelcome to hide & seek gamemode!\nCommands:\n/fly\n/return\n/score\n/settings")
+		sm.gui.chatMessage("[------------------------]\nWelcome to hide & seek gamemode!\nType /help for the commands!")
 	end
 	
 	self.sv.score[player.id] = {plr=player,tags=0,hidetime=(self.sv.G_ChallengeStartTick or 0)}
@@ -527,6 +559,8 @@ function Game.client_onCreate( self )
 		sm.game.bindChatCommand("/return",{},"client_onCommand","Returns everyone to the build world.")
 		sm.game.bindChatCommand("/start",{},"client_onCommand","Start's the game.")
 		sm.game.bindChatCommand("/stop",{},"client_onCommand","Stops the game.")
+		sm.game.bindChatCommand("/maps",{},"client_onCommand","Lists the maps.")
+		sm.game.bindChatCommand("/map",{ { "string", "mapname", true } },"client_onCommand","Selects the map.")
 	end
 	
 	self.cl.gui = {}
@@ -713,6 +747,10 @@ function Game.client_onCommand( self, args )
 		Gui["gui"]:open()
 	elseif args[1] == "/fly" then
 		self.network:sendToServer("server_fly")
+	elseif args[1] == "/maps" then
+		for i,v in ipairs(Maps) do 
+			sm.gui.chatMessage(i.." "..v[1].name)
+		end
 	elseif Authorised() then
 		self.network:sendToServer("server_onCommand",args)
 	end
