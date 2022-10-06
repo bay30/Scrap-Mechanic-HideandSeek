@@ -117,7 +117,7 @@ function Game:sv_start(args, player)
 		if self.sv.seekers[plr.id] then
 			self.sv.score[plr.id].hidetime = sm.game.getCurrentTick()
 		elseif character then
-			character.publicData.waterMovementSpeedFraction = .75
+			character.publicData.waterMovementSpeedFraction = .8
 		end
 	end
 

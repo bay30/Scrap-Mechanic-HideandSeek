@@ -17,9 +17,11 @@ World.enableSurface = true
 
 function World.createCharacterOnSpawner(self, data, player)
 	if not VaildateNetwork("World createCharacterOnSpawner",{player=player},{server=true,auth=true}) then return end
-	local playerSpawners = self.filteredinteractables[tostring(data.uuid or "")] or {}
+	local UUID = data.uuid
+	local playerSpawners = self.filteredinteractables[tostring(UUID or "")] or {}
 	if next(playerSpawners) == nil then
-		playerSpawners = self.filteredinteractables["b5858089-b1f8-4d13-a485-fdaa204d9c6b"] or {}
+		UUID = "b5858089-b1f8-4d13-a485-fdaa204d9c6b"
+		playerSpawners = self.filteredinteractables[UUID] or {}
 	end
 	for key, player in pairs(data.players or {}) do
 		local spawnPosition = sm.vec3.new(2, 2, 20)
@@ -39,6 +41,7 @@ function World.createCharacterOnSpawner(self, data, player)
 		if data.speedmodifyer then
 			Event("Tick",function ()
 				character.publicData.waterMovementSpeedFraction = data.speedmodifyer
+				character.publicData.spawner = UUID
 			end, false, sm.game.getCurrentTick()+1)
 		end
 
@@ -73,6 +76,28 @@ function World.server_onCreate(self)
 	self.sv.displayFloor = not Value
 	self.interactables = {}
 	self.filteredinteractables = {}
+
+	local filter = sm.areaTrigger.filter.character + sm.areaTrigger.filter.dynamicBody
+	local rotation = sm.quat.identity()
+
+	-- Kill box -Z
+	local halfSize = sm.vec3.new( 8192, 8192, 1024 )
+	local position = sm.vec3.new( 0.0, 0.0, -1056.0 )
+	self.killAreaTriggerNZ = sm.areaTrigger.createBox( halfSize, position, rotation, filter )
+	self.killAreaTriggerNZ:bindOnEnter( "server_onTrigger" )
+end
+
+function World:server_onTrigger(trigger, results)
+	for _,v in ipairs(results) do
+		if type(v) == "Body" then
+			for _,shape in ipairs(v:getShapes()) do
+				sm.shape.destroyShape(shape)
+			end
+		end
+		if type(v) == "Character" then
+			self:createCharacterOnSpawner({ players = { v:getPlayer() }, uuid = v.publicData and v.publicData.spawner, speedmodifyer=v.publicData and v.publicData.waterMovementSpeedFraction })
+		end
+	end
 end
 
 function World:server_onAnnoyed()
@@ -147,6 +172,10 @@ end
 function World:server_effect(args,player)
 	if not VaildateNetwork("World server_effect",{player=player},{server=true,auth=true}) then return end
 	self.network:sendToClients("client_createEffect",args)
+end
+
+function World.server_onCellCreated(self, x, y)
+	self.waterManager:sv_onCellLoaded(x, y)
 end
 
 function World.server_onCellLoaded(self, x, y)
