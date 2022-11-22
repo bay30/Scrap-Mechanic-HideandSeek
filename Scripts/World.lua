@@ -227,6 +227,10 @@ function World.client_onDestroy(self)
 	self:client_destroyFloor()
 end
 
+function World.client_onUpdate( self, dt )
+	g_effectManager:cl_onWorldUpdate( self )
+end
+
 function World.client_destroyFloor(self)
 	if not VaildateNetwork("World client_destroyFloor",{},{server=false}) then return end
 	if self.floorEffect then
