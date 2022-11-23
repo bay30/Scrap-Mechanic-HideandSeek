@@ -20,6 +20,9 @@ function World.createCharacterOnSpawner(self, data, player)
 	local UUID = data.uuid
 	local playerSpawners = self.filteredinteractables[tostring(UUID or "")] or {}
 	if next(playerSpawners) == nil then
+		if data.requirespawns then
+			return
+		end
 		UUID = "b5858089-b1f8-4d13-a485-fdaa204d9c6b"
 		playerSpawners = self.filteredinteractables[UUID] or {}
 	end

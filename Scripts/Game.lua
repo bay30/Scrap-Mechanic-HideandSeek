@@ -95,7 +95,7 @@ function Game:sv_prestart(args, player)
 		if plr.character then
 			if self.sv.seekers[plr.id] == nil then
 				sm.event.sendToWorld(self.sv.activeWorld, "createCharacterOnSpawner",
-					{ players = { plr }, uuid = "b5858089-b1f8-4d13-a485-fdcb204d9c6b" }) -- Hider Spawn
+					{ players = { plr }, uuid = "b5858089-b1f8-4d13-a485-fdcb204d9c6b", requirespawns = true }) -- Hider Spawn
 			else
 				sm.event.sendToWorld(self.sv.activeWorld, "createCharacterOnSpawner",
 					{ players = { plr }, uuid = "b5858089-b1f8-4d13-a485-fdaa204d9c6b", speedmodifyer = 0 }) -- Spectator Spawn
@@ -204,12 +204,12 @@ function Game.server_onFixedUpdate( self, delta )
 			sm.event.sendToWorld(self.sv.activeWorld,"createCharacterOnSpawner",{players=FilteredPlayers,uuid="b5858089-d1f8-4d13-a485-fdcb204d9c6b"})
 		end
 	end
-	if self:sv_hasStarted() and self.sv.settings.GameTime and self.sv.settings.GameTime ~= 0 then
+	if self:sv_hasStarted() and self.sv.settings.GameTime and tonumber(self.sv.settings.GameTime) ~= 0 then
 		local milliseconds = (self.sv.G_ChallengeStartTick+self.sv.settings.GameTime*40)-sm.game.getCurrentTick()
 		local seconds = milliseconds/40
 		local minutes = seconds/60
 		local hours = minutes/60
-		self.network:sendToClients("client_displayTimer",string.format( "%02i:%02i:%02i", hours%60, minutes%60, seconds%60 ))
+		--self.network:sendToClients("client_displayTimer",string.format( "%02i:%02i:%02i", hours%60, minutes%60, seconds%60 ))
 		if seconds <= 0 then
 			self:sv_stop()
 		end
@@ -412,7 +412,7 @@ function Game.server_setWorld( self, args, player )
 		self:sv_stop()
 		sm.game.setLimitedInventory(false)
 		self.sv.gameRunning = false
-		self.network:sendToClients("client_displayTimer","00:00:00")
+		self.network:sendToClients("client_setTimer",false)
 		self.sv.G_ChallengeStartTick = 0
 		self.network:sendToClients("client_onJankyUpdate",{ {Variable="G_ChallengeStartTick",Value=self.sv.G_ChallengeStartTick}, {Variable="gameRunning",Value=self.sv.gameRunning} })
 		if self.sv.activeWorld.id ~= self.sv.saved.buildWorld.id then
@@ -424,6 +424,7 @@ function Game.server_setWorld( self, args, player )
 	elseif args == "play" then
 		self:sv_stop()
 		self.sv.gameRunning = true
+		self.network:sendToClients("client_setTimer",true)
 		if self.sv.activeWorld.id ~= self.sv.saved.buildWorld.id then
 			self.sv.objectlist = {}
 			self.sv.activeWorld:destroy()
@@ -465,6 +466,8 @@ function Game.server_onPlayerJoined( self, player, isNewPlayer )
 
 	self.network:sendToClients("client_onJankyUpdate",{ {Variable="G_ChallengeStartTick",Value=self.sv.G_ChallengeStartTick}, {Variable="score",Value=self.sv.score}, {Variable="gameRunning",Value=self.sv.gameRunning} })
 	
+	self.network:sendToClients("client_setTimer",self.sv.activeWorld ~= self.sv.saved.buildWorld
+)
 end
 
 function Game.server_onPlayerLeft( self, player )
@@ -518,6 +521,13 @@ end
 function Game.client_displayAlert( self, text )
 	if not VaildateNetwork("Game client_displayAlert",{},{server=false}) then return end
 	sm.gui.displayAlertText(text)
+end
+
+function Game:client_setTimer(state)
+	self.cl.gui["timer"]:setVisible("Time",state)
+	if state then
+		self.cl.gui["timer"]:setText("Time", string.format( "%02i:%02i:%02i", 0, 0, 0))
+	end
 end
 
 function Game.client_displayTimer( self, text )
@@ -625,7 +635,7 @@ function Game.client_onFixedUpdate( self )
 					seconds = milliseconds/40
 					minutes = seconds/ 60 % 60
 					hours = minutes/ 60 % 60
-				end
+				end 
 				
 				self.cl.gui.score.gui:setText("TextTime"..i,string.format( "%02i:%02i:%02i", hours, minutes, seconds % 60 ))
 			else
@@ -659,6 +669,20 @@ function Game.client_onFixedUpdate( self )
 				end
 			end
 		end
+	end
+	if self.cl.gameRunning then
+		local milliseconds = sm.game.getServerTick() - self.cl.G_ChallengeStartTick
+		local seconds = milliseconds/40
+		local minutes = seconds / 60
+		local hours = minutes / 60
+		local string = string.format( "%02i:%02i:%02i", hours % 60, minutes % 60, seconds % 60 )
+		if (tonumber(self.cl.settings.GameTime) or 0) > 0 then
+			local seconds = self.cl.settings.GameTime
+			local minutes = seconds / 60
+			local hours = minutes / 60
+			string = string.. string.format( " : %02i:%02i:%02i", hours % 60, minutes % 60, seconds % 60 )
+		end
+		self.cl.gui["timer"]:setText("Time", string)
 	end
 end
 
