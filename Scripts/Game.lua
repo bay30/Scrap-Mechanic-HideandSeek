@@ -332,6 +332,7 @@ function Game.server_load( self, args, player )
 				body.usable = false
 				body.liftable = false
 				body.destructable = self.sv.settings.Destruction
+				body.convertableToDynamic = false
 				for key,shape in pairs(body:getShapes()) do
 					if shape.uuid == sm.uuid.new("4a9929e9-aa85-4791-89c2-f8799920793f") then
 						if not self.sv.objectlist.starters then
