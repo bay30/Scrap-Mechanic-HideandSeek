@@ -2,7 +2,7 @@ local Name = "[UtilsNetwork] "
 local Warnings = "[Warning] "
 local Errors = "[Error] "
 
-AuthorisedIds = {[1]=true} -- Id 1 should always be host, if it isn't well. obviously something isn't right with the game.
+AuthorisedIds = {[1]=true} -- Id 1 is creator of the save, not the host.
 
 local function FetchPlayerDetails(player)
 	if player and type(player) == "Player" then

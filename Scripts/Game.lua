@@ -207,8 +207,8 @@ function Game.server_onFixedUpdate( self, delta )
 	if self:sv_hasStarted() and self.sv.settings.GameTime and tonumber(self.sv.settings.GameTime) ~= 0 then
 		local milliseconds = (self.sv.G_ChallengeStartTick+self.sv.settings.GameTime*40)-sm.game.getCurrentTick()
 		local seconds = milliseconds/40
-		local minutes = seconds/60
-		local hours = minutes/60
+		--local minutes = seconds/60
+		--local hours = minutes/60
 		--self.network:sendToClients("client_displayTimer",string.format( "%02i:%02i:%02i", hours%60, minutes%60, seconds%60 ))
 		if seconds <= 0 then
 			self:sv_stop()
