@@ -370,6 +370,41 @@ function Game.server_onCommand( self, args, player )
 		self:sv_prestart()
 	elseif args[1] == "/stop" then
 		self:sv_stop( args, player )
+	elseif args[1] == "/addmap" then
+		local desc = sm.json.open("$CONTENT_DATA/description.json")
+		local fileId = tonumber(args[2])
+
+		if not fileId then
+			local _, StartId = string.find(args[2], "?id=")
+			if StartId then
+				local _, EndId = string.find(args[2], "%D", StartId+1)
+				if EndId then
+					fileId = tonumber(string.sub(args[2], StartId+1, EndId-1))
+				end
+			end
+		end
+
+		if not fileId then
+			sm.gui.chatMessage("Invaild First Argument!")
+			return
+		end
+
+		local Target = 0
+		for i, v in ipairs(desc.dependencies) do
+			if v.fileId == fileId then
+				Target = i
+				break
+			end
+		end
+		if Target == 0 then Target = #desc.dependencies + 1 end
+
+		desc.dependencies[Target] = {
+			["fileId"] = fileId,
+			["localId"] = tostring(args[3]) or "00000000-0000-0000-0000-000000000000"
+		}
+
+		sm.json.save(desc, "$CONTENT_DATA/description.json")
+		sm.gui.chatMessage("#78ff7cReload the save to see the updated map list.")
 	elseif args[1] == "/map" then
 		local map
 		for i,v in ipairs(Maps) do
@@ -398,7 +433,7 @@ function Game.server_onCommand( self, args, player )
 				table.insert(tiles,strang)
 			end
 			table.insert(tiles,"$CONTENT_DATA/Terrain/Tiles/challengemode_env_DT.tile")
-			sm.gui.chatMessage("\nMap Link: https://steamcommunity.com/workshop/filedetails/\n?id=".. map[3].fileId.. "\n\nMap Makers: ".. map[3].credits.usernames.. "\n")
+			sm.gui.chatMessage("\nMap Link: https://steamcommunity.com/workshop/filedetails/\n?id=".. map[3].fileId.. "\n\nMap Makers: ".. (map[3].credits or "N/A").. "\n")
 			self:server_setValues({{blueprints=blueprints,tiles=tiles},true,player})
 		end
 	end
@@ -573,6 +608,7 @@ function Game.client_onCreate( self )
 		sm.game.bindChatCommand("/stop",{},"client_onCommand","Stops the game.")
 		sm.game.bindChatCommand("/maps",{},"client_onCommand","Lists the maps.")
 		sm.game.bindChatCommand("/map",{ { "string", "mapname", true } },"client_onCommand","Selects the map.")
+		sm.game.bindChatCommand("/addmap",{ { "string", "steamid or steamurl", true }, { "string", "localId", true } },"client_onCommand","Adds a map to the maplist.")
 	end
 	
 	self.cl.gui = {}
